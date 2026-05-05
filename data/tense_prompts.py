@@ -1,0 +1,73 @@
+"""
+30 matched past/future tense prompt pairs for contrastive steering experiments.
+
+Each pair differs only in tense (past simple vs future "will + verb").
+The tense-bearing verb is at or near the end so it's captured in the
+last-token activation.
+"""
+
+PROMPT_PAIRS = [
+    ("Yesterday morning, the children walked",
+     "Tomorrow morning, the children will walk"),
+    ("Last week, the committee voted",
+     "Next week, the committee will vote"),
+    ("In 1995, the company expanded",
+     "In 2030, the company will expand"),
+    ("During the previous summer, they travelled",
+     "During the upcoming summer, they will travel"),
+    ("After the meeting ended, the director spoke",
+     "After the meeting ends, the director will speak"),
+    ("Before the storm hit, the residents evacuated",
+     "Before the storm hits, the residents will evacuate"),
+    ("On Monday, the trains stopped",
+     "On Monday, the trains will stop"),
+    ("Two years ago, the bridge collapsed",
+     "In two years, the bridge will collapse"),
+    ("Earlier today, the doctor arrived",
+     "Later today, the doctor will arrive"),
+    ("By the end of the war, many soldiers returned",
+     "By the end of the war, many soldiers will return"),
+    ("During his presidency, taxes decreased",
+     "During his presidency, taxes will decrease"),
+    ("After the announcement, the markets fell",
+     "After the announcement, the markets will fall"),
+    ("In the previous chapter, the protagonist died",
+     "In the next chapter, the protagonist will die"),
+    ("Last summer, the festival opened",
+     "Next summer, the festival will open"),
+    ("Before the speech began, the audience clapped",
+     "Before the speech begins, the audience will clap"),
+    ("When the alarm sounded, the workers fled",
+     "When the alarm sounds, the workers will flee"),
+    ("During the eclipse, the crowd cheered",
+     "During the eclipse, the crowd will cheer"),
+    ("After the contract expired, the parties separated",
+     "After the contract expires, the parties will separate"),
+    ("When the bell rang, the students stood",
+     "When the bell rings, the students will stand"),
+    ("Last month, our visitors departed",
+     "Next month, our visitors will depart"),
+    ("Two minutes after the gunshot, the police arrived",
+     "Two minutes after the gunshot, the police will arrive"),
+    ("Once the rains started, the river flooded",
+     "Once the rains start, the river will flood"),
+    ("During the recession, prices dropped",
+     "During the recession, prices will drop"),
+    ("When the lights dimmed, the orchestra played",
+     "When the lights dim, the orchestra will play"),
+    ("After the tournament concluded, the winners celebrated",
+     "After the tournament concludes, the winners will celebrate"),
+    ("On the day of the launch, the engineers cheered",
+     "On the day of the launch, the engineers will cheer"),
+    ("During his speech, the audience listened",
+     "During his speech, the audience will listen"),
+    ("Once the verdict was read, the courtroom gasped",
+     "Once the verdict is read, the courtroom will gasp"),
+    ("When the sun set, the campers gathered",
+     "When the sun sets, the campers will gather"),
+    ("After the curtain rose, the actors entered",
+     "After the curtain rises, the actors will enter"),
+]
+
+PAST_PROMPTS = [pair[0] for pair in PROMPT_PAIRS]
+FUTURE_PROMPTS = [pair[1] for pair in PROMPT_PAIRS]

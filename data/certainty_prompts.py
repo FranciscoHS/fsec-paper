@@ -1,0 +1,73 @@
+"""
+30 matched certain/uncertain prompt pairs for contrastive steering
+experiments.
+
+Each pair has the same structure, with the certainty-bearing word at or
+near the end so it's captured in the last-token activation.
+"""
+
+PROMPT_PAIRS = [
+    ("Looking at the evidence, the detective was completely certain",
+     "Looking at the evidence, the detective was completely uncertain"),
+    ("Asked about the answer, the student appeared totally sure",
+     "Asked about the answer, the student appeared totally unsure"),
+    ("Reviewing the data, the analyst became entirely confident",
+     "Reviewing the data, the analyst became entirely doubtful"),
+    ("After the meeting, everyone felt thoroughly convinced",
+     "After the meeting, everyone felt thoroughly unconvinced"),
+    ("Considering the evidence, the jury seemed largely sure",
+     "Considering the evidence, the jury seemed largely unsure"),
+    ("By the end of his speech, the speaker was entirely confident",
+     "By the end of his speech, the speaker was entirely doubtful"),
+    ("Asked again about the date, she was definitely certain",
+     "Asked again about the date, she was definitely uncertain"),
+    ("Looking at the test results, the doctor felt absolutely sure",
+     "Looking at the test results, the doctor felt absolutely unsure"),
+    ("Throughout the trial, the witness remained entirely certain",
+     "Throughout the trial, the witness remained entirely uncertain"),
+    ("After his investigation, the reporter was decidedly confident",
+     "After his investigation, the reporter was decidedly doubtful"),
+    ("On reading the contract, the lawyer became wholly convinced",
+     "On reading the contract, the lawyer became wholly skeptical"),
+    ("Asked about the route, the guide sounded entirely confident",
+     "Asked about the route, the guide sounded entirely hesitant"),
+    ("Pressed for an answer, he claimed to be completely sure",
+     "Pressed for an answer, he claimed to be completely unsure"),
+    ("Watching the demonstration, the engineer was clearly certain",
+     "Watching the demonstration, the engineer was clearly doubtful"),
+    ("Despite the storm, the captain remained visibly confident",
+     "Despite the storm, the captain remained visibly nervous"),
+    ("Even after the cross-examination, she stayed totally sure",
+     "Even after the cross-examination, she stayed totally unsure"),
+    ("Whenever asked, the professor was perfectly definite",
+     "Whenever asked, the professor was perfectly evasive"),
+    ("By the end of the briefing, the team felt entirely confident",
+     "By the end of the briefing, the team felt entirely doubtful"),
+    ("On hearing the news, the manager became totally convinced",
+     "On hearing the news, the manager became totally skeptical"),
+    ("Reading the report, the editor remained completely certain",
+     "Reading the report, the editor remained completely uncertain"),
+    ("Throughout the discussion, the chair sounded utterly sure",
+     "Throughout the discussion, the chair sounded utterly unsure"),
+    ("After the presentation, the investors were clearly convinced",
+     "After the presentation, the investors were clearly skeptical"),
+    ("Asked about her plans, the candidate was unmistakably definite",
+     "Asked about her plans, the candidate was unmistakably indefinite"),
+    ("Studying the photo, the witness felt completely sure",
+     "Studying the photo, the witness felt completely unsure"),
+    ("After much deliberation, the committee became thoroughly confident",
+     "After much deliberation, the committee became thoroughly doubtful"),
+    ("Listening to the lecture, the student remained perfectly certain",
+     "Listening to the lecture, the student remained perfectly tentative"),
+    ("Pressed on the matter, the spokesperson was firmly convinced",
+     "Pressed on the matter, the spokesperson was firmly skeptical"),
+    ("By the third draft, the author was finally resolute",
+     "By the third draft, the author was finally wavering"),
+    ("Throughout the negotiation, the diplomat appeared utterly confident",
+     "Throughout the negotiation, the diplomat appeared utterly hesitant"),
+    ("After running the simulation, the scientist was completely certain",
+     "After running the simulation, the scientist was completely uncertain"),
+]
+
+CERTAIN_PROMPTS = [pair[0] for pair in PROMPT_PAIRS]
+UNCERTAIN_PROMPTS = [pair[1] for pair in PROMPT_PAIRS]
