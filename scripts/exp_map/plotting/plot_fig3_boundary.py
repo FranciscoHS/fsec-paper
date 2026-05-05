@@ -1,10 +1,9 @@
 """Fig 3 style iso-plateau boundary plot for an exp-map sweep2d pair.
 
-Cloned from scripts/perturbation/plot_fig3_formal_pt.py — same layout
-(p=2 circle in blue, p=infinity square in dashed orange, data as small
-grey circles, polar (theta cos phi / theta_1, theta sin phi / theta_2)
-axes) but reads the new exp_map sweep2d PKLs and uses the new
-lib/superellipse fit code.
+Plots the iso-response contour (one point per polar angle phi_i) in
+raw (alpha_1, alpha_2) degrees, with the p=2 ellipse and p=infinity
+rectangle (semi-axes theta_1, theta_2) as references and the fitted
+superellipse overlaid.
 
 Usage:
   python scripts/exp_map/plotting/plot_fig3_boundary.py \\
@@ -71,56 +70,69 @@ def main():
         raise RuntimeError("axis intercepts not in range; pick a smaller "
                            "threshold or check the L2 grid")
 
-    # Contour points + normalize. Exact-geodesic mode matches the
-    # protocol in lib/superellipse.fit_p_one_pass(exact_geodesic=True).
+    # Contour points in raw (alpha_1, alpha_2) degrees.
     contour = extract_contour(angles, median_grid, thresh)
     if contour.size == 0:
         raise RuntimeError("no contour at this threshold")
-    cn = contour.astype(float).copy()
+    cn_raw = contour.astype(float).copy()           # raw degrees, for plotting
+
+    # Fit superellipse in normalised (theta_1, theta_2) coords; the fit
+    # routine assumes unit reference, so we still divide by theta1, theta2
+    # here. The plotting axes below stay in raw degrees.
+    cn_norm = cn_raw.copy()
     if args.exact:
-        r_deg = np.hypot(cn[:, 0], cn[:, 1])
+        r_deg = np.hypot(cn_norm[:, 0], cn_norm[:, 1])
         r_safe = np.where(r_deg > 1e-12, r_deg, 1.0)
         r_rad = np.deg2rad(r_deg)
         t1_rad = np.deg2rad(theta1)
         t2_rad = np.deg2rad(theta2)
-        cn[:, 0] = (np.sin(r_rad) / np.sin(t1_rad)) * (cn[:, 0] / r_safe)
-        cn[:, 1] = (np.sin(r_rad) / np.sin(t2_rad)) * (cn[:, 1] / r_safe)
+        cn_norm[:, 0] = (np.sin(r_rad) / np.sin(t1_rad)) * (cn_norm[:, 0] / r_safe)
+        cn_norm[:, 1] = (np.sin(r_rad) / np.sin(t2_rad)) * (cn_norm[:, 1] / r_safe)
     else:
-        cn[:, 0] /= theta1; cn[:, 1] /= theta2
-    # filter to first quadrant, away from axes (matches fit_superellipse)
-    keep = (cn[:, 0] > 0.05) & (cn[:, 1] > 0.05) \
-        & (cn[:, 0] < 1.5) & (cn[:, 1] < 1.5)
-    cn = cn[keep]
+        cn_norm[:, 0] /= theta1; cn_norm[:, 1] /= theta2
+    keep = (cn_norm[:, 0] > 0.05) & (cn_norm[:, 1] > 0.05) \
+        & (cn_norm[:, 0] < 1.5) & (cn_norm[:, 1] < 1.5)
+    cn_norm = cn_norm[keep]
+    cn_raw  = cn_raw[keep]
 
-    fit = fit_superellipse(cn[:, 0], cn[:, 1])
+    fit = fit_superellipse(cn_norm[:, 0], cn_norm[:, 1])
     p_fit = fit["p"]
     print(f"Fitted p = {p_fit:.3f}   "
           f"mean_radial_frac = {fit['mean_radial_frac']:.3f}   "
           f"n_pts = {fit['n_pts']}")
 
     fig, ax = plt.subplots(figsize=(5.8, 5.8))
-    ax.set_xticks(np.arange(0, 1.21, 0.2))
-    ax.set_yticks(np.arange(0, 1.21, 0.2))
+    # tick spacing chosen to give ~5–7 ticks across each raw-degree axis
+    def _tickspacing(span):
+        targets = [0.5, 1, 2, 5, 10, 15, 20, 25, 50]
+        return next((t for t in targets if span / t <= 8), 50)
+    sp1 = _tickspacing(theta1 * 1.15)
+    sp2 = _tickspacing(theta2 * 1.15)
+    ax.set_xticks(np.arange(0, theta1 * 1.18 + 1e-6, sp1))
+    ax.set_yticks(np.arange(0, theta2 * 1.18 + 1e-6, sp2))
     ax.grid(True, which="major", color="#bbbbbb", lw=0.5, alpha=0.45)
 
+    # p=infinity rectangle with semi-axes theta1, theta2
     xi, yi = superellipse_curve(20)
-    ax.plot(xi, yi, ls=(0, (1.8, 2.5)), color="#D9822B", lw=1.6,
-            alpha=0.95,
+    ax.plot(theta1 * xi, theta2 * yi, ls=(0, (1.8, 2.5)),
+            color="#D9822B", lw=1.6, alpha=0.95,
             label=r"Per-feature threshold ($p\to\infty$)")
+    # p=2 ellipse with semi-axes theta1, theta2
     xc, yc = superellipse_curve(2)
-    ax.plot(xc, yc, "-", color="#1F77B4", lw=2.6, alpha=0.95,
+    ax.plot(theta1 * xc, theta2 * yc, "-",
+            color="#1F77B4", lw=2.6, alpha=0.95,
             label=r"Euclidean combination ($p=2$)")
 
-    cont_angle = np.arctan2(cn[:, 1], cn[:, 0])
+    cont_angle = np.arctan2(cn_raw[:, 1], cn_raw[:, 0])
     order = np.argsort(cont_angle)
     res_pct = 100.0 * fit["mean_radial_frac"]
-    # Fitted super-ellipse curve, drawn under the data points so the
-    # markers visually sit on the line they're being fit to.
+    # Fitted super-ellipse, scaled to (theta1, theta2).
     xf, yf = superellipse_curve(p_fit)
-    ax.plot(xf, yf, "-", color="#3a7d3a", lw=2.0, alpha=0.95,
+    ax.plot(theta1 * xf, theta2 * yf, "-",
+            color="#3a7d3a", lw=2.0, alpha=0.95,
             label=rf"Super-ellipse fit ($p_{{\mathrm{{fit}}}} = {p_fit:.2f}$)",
             zorder=4)
-    ax.plot(cn[order, 0], cn[order, 1], "o",
+    ax.plot(cn_raw[order, 0], cn_raw[order, 1], "o",
             color="#3a3a3a", markersize=4.0, alpha=0.85,
             markeredgecolor="none",
             label="Data",
@@ -129,16 +141,17 @@ def main():
     print(f"Caption stat: residual = {res_pct:.2f}%  (n_pts = "
           f"{fit['n_pts']})")
 
-    ax.set_xlim(-0.03, 1.15); ax.set_ylim(-0.03, 1.15)
+    ax.set_xlim(-0.03 * theta1, 1.15 * theta1)
+    ax.set_ylim(-0.03 * theta2, 1.15 * theta2)
     ax.set_aspect("equal")
     if args.exact:
-        x_lab = (rf"$\sin\alpha(\varphi)\cos\varphi / \sin\alpha_1$  "
-                 rf"({args.d1})")
-        y_lab = (rf"$\sin\alpha(\varphi)\sin\varphi / \sin\alpha_2$  "
-                 rf"({args.d2})")
+        x_lab = (rf"$\sin\alpha(\varphi_i)\cos\varphi_i$  "
+                 rf"({args.d1}, deg)")
+        y_lab = (rf"$\sin\alpha(\varphi_i)\sin\varphi_i$  "
+                 rf"({args.d2}, deg)")
     else:
-        x_lab = rf"$\alpha(\varphi)\cos\varphi / \alpha_1$  ({args.d1})"
-        y_lab = rf"$\alpha(\varphi)\sin\varphi / \alpha_2$  ({args.d2})"
+        x_lab = rf"$\alpha(\varphi_i)\cos\varphi_i$  ({args.d1}, deg)"
+        y_lab = rf"$\alpha(\varphi_i)\sin\varphi_i$  ({args.d2}, deg)"
     ax.set_xlabel(x_lab, fontsize=12)
     ax.set_ylabel(y_lab, fontsize=12)
     ax.spines["top"].set_visible(False)
