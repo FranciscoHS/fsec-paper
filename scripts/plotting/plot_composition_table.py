@@ -15,8 +15,8 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from matplotlib.patches import FancyBboxPatch
 
-OUT_PNG = "results/exp_map/figures/composition_table_gender_tense.png"
-OUT_PDF = "results/exp_map/figures/composition_table_gender_tense.pdf"
+OUT_PNG = "results/figures/composition_table_gender_tense.png"
+OUT_PDF = "results/figures/composition_table_gender_tense.pdf"
 
 # Colours (slot-matched to plot_composition_formal_pt.py)
 C_TEXT = "#2a2a2a"

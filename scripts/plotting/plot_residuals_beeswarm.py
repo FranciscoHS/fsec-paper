@@ -15,21 +15,21 @@ residual instead of the median exponent. All filter / overlap /
 exclusion logic and the per-sub-group bootstrap CI then run unchanged.
 
 Usage:
-  python scripts/exp_map/plotting/plot_residuals_beeswarm.py
+  python scripts/plotting/plot_residuals_beeswarm.py
 """
 from __future__ import annotations
 import os, sys, pickle, argparse
 sys.path.insert(0, ".")
 import numpy as np
 
-import scripts.exp_map.plotting.plot_robustness_beeswarm as P
-from scripts.exp_map.plotting.plot_robustness_beeswarm import (
+import scripts.plotting.plot_robustness_beeswarm as P
+from scripts.plotting.plot_robustness_beeswarm import (
     col_model, col_perturb_layer, col_measure_layer, col_metric,
     col_method, col_anchor_source,
     _apply_filters, _filter_exclude,
     _filter_by_overlap, render, FITS_DIR, OUT_DIR,
 )
-from scripts.exp_map.plotting.plot_beeswarm_direction_types import (
+from scripts.plotting.plot_beeswarm_direction_types import (
     _filter_family_overlap, FAMILIES,
 )
 

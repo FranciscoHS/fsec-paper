@@ -8,15 +8,15 @@
      (positive prompt / negative prompt).
 
 Outputs:
-  results/exp_map/figures/appendix_directions_overlap.pdf
-  results/exp_map/figures/appendix_directions_overlap.png
-  results/exp_map/figures/appendix_directions_table.tex
+  results/figures/appendix_directions_overlap.pdf
+  results/figures/appendix_directions_overlap.png
+  results/figures/appendix_directions_table.tex
 
 Pass --paper_dir <dir> to redirect outputs elsewhere (e.g. into a
 paper-build tree).
 
 Usage:
-  python scripts/exp_map/plotting/build_directions_appendix.py
+  python scripts/plotting/build_directions_appendix.py
 """
 from __future__ import annotations
 import os, sys, pickle, argparse
@@ -27,9 +27,9 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 
-from scripts.exp_map.lib import registry
+from scripts.lib import registry
 
-PAPER_DIR = "results/exp_map"
+PAPER_DIR = "results"
 EXCLUDED = {"Formal", "HonestyShort", "TensePresent"}
 THRESH = 0.10
 
@@ -84,7 +84,7 @@ def example_pair(name: str) -> tuple[str, str]:
 
 
 def load_directions(target: str = "gemma", layer: int = 2):
-    fp = f"results/exp_map/data/directions/dirs_{target}_L{layer}.pkl"
+    fp = f"results/directions/dirs_{target}_L{layer}.pkl"
     with open(fp, "rb") as f:
         blob = pickle.load(f)
     return blob

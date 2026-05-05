@@ -5,16 +5,16 @@ SAE-feature axis is itself wrong, PCA gives the right reference for the
 direction-family beeswarm.
 
 Output:
-  results/exp_map/data/directions/dirs_<target>_L<L>_pca_fineweb.pkl
+  results/directions/dirs_<target>_L<L>_pca_fineweb.pkl
   schema: matches the existing direction-cache schema (33 unit vectors,
   ``family='pca_fineweb'``).
 
 Activations are cached in
-  results/exp_map/data/activations/acts_<target>_L<L>_fineweb_<n>.pkl
+  results/activations/acts_<target>_L<L>_fineweb_<n>.pkl
 via ``actlib.fineweb_acts_n`` so this can be re-run cheaply.
 
 Usage:
-  python -u scripts/exp_map/pca_directions.py --target gemma --layer 2
+  python -u scripts/pca_directions.py --target gemma --layer 2
 """
 from __future__ import annotations
 import os, sys, pickle, argparse, time
@@ -24,9 +24,9 @@ import torch
 import torch.nn.functional as F
 
 from src.model import load_model
-from scripts.exp_map.lib import activations as actlib
+from scripts.lib import activations as actlib
 
-OUT_DIR = "results/exp_map/data/directions"
+OUT_DIR = "results/directions"
 os.makedirs(OUT_DIR, exist_ok=True)
 
 N_DIRS = 33

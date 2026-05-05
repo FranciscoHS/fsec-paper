@@ -6,7 +6,7 @@ rectangle (semi-axes theta_1, theta_2) as references and the fitted
 superellipse overlaid.
 
 Usage:
-  python scripts/exp_map/plotting/plot_fig3_boundary.py \\
+  python scripts/plotting/plot_fig3_boundary.py \\
       --target gemma --d1 Gender --d2 Tense --layer 2 --thresh 50
 """
 from __future__ import annotations
@@ -17,11 +17,11 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-from scripts.exp_map.lib.superellipse import (
+from scripts.lib.superellipse import (
     extract_contour, axis_intercept, fit_superellipse, superellipse_curve,
 )
 
-OUT_DIR = "results/exp_map/figures"
+OUT_DIR = "results/figures"
 
 
 def main():
@@ -43,7 +43,7 @@ def main():
                          "Adds '_exact' to the default output filename.")
     args = ap.parse_args()
 
-    pkl_path = (f"results/exp_map/data/sweeps_2d/sweep2d_{args.target}_L"
+    pkl_path = (f"results/sweeps_2d/sweep2d_{args.target}_L"
                 f"{args.layer}_{args.d1}__{args.d2}_fineweb_"
                 f"{int(args.max_alpha)}deg.pkl")
     with open(pkl_path, "rb") as f:

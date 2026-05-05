@@ -12,7 +12,7 @@ Setup:
   anchors       = 33 distinct FineWeb anchors (seed=42), one direction each
 
 Output:
-  results/exp_map/data/directions/dirs_gemma_L2_melbo.pkl
+  results/directions/dirs_gemma_L2_melbo.pkl
   {
     'directions':       {f'melbo_{i:03d}': Tensor[D]},
     'family':           'melbo',
@@ -26,7 +26,7 @@ Output:
   }
 
 Usage:
-  python -u scripts/exp_map/melbo_directions.py
+  python -u scripts/melbo_directions.py
 """
 from __future__ import annotations
 import os, sys, pickle, argparse, time
@@ -42,7 +42,7 @@ from scripts.melbo.run_iterative_melbo_hf import (
     capped_melbo_one_direction,
 )
 
-OUT_DIR = "results/exp_map/data/directions"
+OUT_DIR = "results/directions"
 os.makedirs(OUT_DIR, exist_ok=True)
 
 N_DIRS = 33

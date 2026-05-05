@@ -6,14 +6,14 @@ Defaults to f = 0.40 (Gemma's pick of 150 corresponds to f ≈ 0.39 of
 its median axis-max).
 
 Usage:
-  python scripts/exp_map/recommend_fixed_threshold.py
-  python scripts/exp_map/recommend_fixed_threshold.py --f 0.35
+  python scripts/recommend_fixed_threshold.py
+  python scripts/recommend_fixed_threshold.py --f 0.35
 """
 from __future__ import annotations
 import os, glob, pickle, argparse, re
 import numpy as np
 
-SWEEP_DIR = "results/exp_map/data/sweeps_2d"
+SWEEP_DIR = "results/sweeps_2d"
 
 
 def axis_max_per_pair(pkl_path: str, metric: str = "l2") -> float:

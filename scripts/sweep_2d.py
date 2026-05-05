@@ -3,16 +3,16 @@
 Per (model, pair=(d1, d2)): 31x31 grid in (alpha_1, alpha_2) up to 60 deg,
 with 30 FineWeb anchors per pair (Plan D2/D3/D4).
 
-Output: results/exp_map/data/sweeps_2d/sweep2d_<target>_L<layer>_<d1>__<d2>_fineweb_60deg.pkl
+Output: results/sweeps_2d/sweep2d_<target>_L<layer>_<d1>__<d2>_fineweb_60deg.pkl
 {
   'angles_deg':   (n,),
   'l2':           (n_anchors, n, n),
-  ... full PKL header (see Plans/exp_map_workspace.md)
+  ... full PKL header
 }
 
 Usage:
-  python scripts/exp_map/sweep_2d.py --target gemma --layer 2          # all 20 Tier-1 pairs
-  python scripts/exp_map/sweep_2d.py --target gemma --layer 2 \
+  python scripts/sweep_2d.py --target gemma --layer 2          # all 20 Tier-1 pairs
+  python scripts/sweep_2d.py --target gemma --layer 2 \
       --pairs Gender,Tense                                              # one pair
 """
 from __future__ import annotations
@@ -22,11 +22,11 @@ import numpy as np
 import torch
 
 from src.model import load_model, _get_blocks
-from scripts.exp_map.lib import registry, directions as dirlib, activations as actlib
-from scripts.exp_map.lib.sweep_core import run_2d_per_anchors
-from scripts.exp_map.lib.parametrize import eps_thresholds, CHART
+from scripts.lib import registry, directions as dirlib, activations as actlib
+from scripts.lib.sweep_core import run_2d_per_anchors
+from scripts.lib.parametrize import eps_thresholds, CHART
 
-OUT_DIR = "results/exp_map/data/sweeps_2d"
+OUT_DIR = "results/sweeps_2d"
 os.makedirs(OUT_DIR, exist_ok=True)
 
 # locked params (Plan E2, D2/D3/D4)
@@ -239,7 +239,7 @@ def main():
     else:
         angles_deg = np.linspace(0, args.max_angle, args.n_steps)
     angles_rad = np.deg2rad(angles_deg)
-    parametrize_sha = _git_sha("scripts/exp_map/lib/parametrize.py")
+    parametrize_sha = _git_sha("scripts/lib/parametrize.py")
 
     # filename suffix encodes non-default config
     variant_suffix = ""

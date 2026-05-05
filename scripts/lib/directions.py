@@ -1,6 +1,6 @@
 """DoM direction extraction with disk caching.
 
-Cache path: results/exp_map/data/directions/dirs_<target>_L<layer>.pkl
+Cache path: results/directions/dirs_<target>_L<layer>.pkl
 {
   'directions': {name: torch.Tensor[D]},  # unit vector, sign per registry
   'signs':      {name: 'side_a->side_b'},
@@ -16,9 +16,9 @@ import torch.nn.functional as F
 
 import sys
 sys.path.insert(0, ".")
-from scripts.exp_map.lib import registry
+from scripts.lib import registry
 
-OUT_DIR = "results/exp_map/data/directions"
+OUT_DIR = "results/directions"
 os.makedirs(OUT_DIR, exist_ok=True)
 
 

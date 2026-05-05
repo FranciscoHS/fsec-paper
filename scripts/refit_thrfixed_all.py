@@ -10,7 +10,7 @@ import os, sys, subprocess, argparse
 sys.path.insert(0, ".")
 import numpy as np
 
-from scripts.exp_map.recommend_fixed_threshold import scan_target_layer
+from scripts.recommend_fixed_threshold import scan_target_layer
 
 # (target, layer, variant_suffix, anchor_source, metric)
 # variant_suffix matches the sweep filename suffix appended after the
@@ -43,7 +43,7 @@ CONDITIONS = [
     ("gemma",   2, "_dirsae_random", "fineweb", "l2"),
     ("gemma",   2, "_dirmelbo",      "fineweb", "l2"),
     ("gemma",   2, "_dirrandom",     "fineweb", "l2"),
-    # Direction-family — better baselines (Plans/exp_map_better_baselines.md)
+    # Direction-family — better baselines
     ("gemma",   2, "_dirsae_eval",    "fineweb", "l2"),
     ("gemma",   2, "_dirsae_fineweb", "fineweb", "l2"),
     ("gemma",   2, "_dirpca_fineweb", "fineweb", "l2"),
@@ -95,7 +95,7 @@ def main():
         if args.exact: out_suf += "_exact"
 
         cmd = [
-            "python", "scripts/exp_map/fit_pairs.py",
+            "python", "scripts/fit_pairs.py",
             "--target", tgt, "--layer", str(L),
             "--variant_suffix", vsuf,
             "--anchor_source", asrc,

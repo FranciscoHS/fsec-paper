@@ -22,8 +22,8 @@ width_<W>/average_l0_<L0>/params.npz`` (same path as
 ``sae_directions.py``) so we don't depend on sae_lens / transformer_lens.
 
 Usage:
-  python -u scripts/exp_map/sae_directions_top.py --rank_set anchors
-  python -u scripts/exp_map/sae_directions_top.py --rank_set fineweb \\
+  python -u scripts/sae_directions_top.py --rank_set anchors
+  python -u scripts/sae_directions_top.py --rank_set fineweb \\
       --n_fineweb 10000
 """
 from __future__ import annotations
@@ -34,9 +34,9 @@ import torch
 import torch.nn.functional as F
 
 from src.model import load_model
-from scripts.exp_map.lib import activations as actlib
+from scripts.lib import activations as actlib
 
-OUT_DIR = "results/exp_map/data/directions"
+OUT_DIR = "results/directions"
 os.makedirs(OUT_DIR, exist_ok=True)
 
 N_DIRS = 33

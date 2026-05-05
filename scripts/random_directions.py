@@ -3,7 +3,7 @@ residual width (D=3584). For the direction-type column of the exp_map
 robustness beeswarm.
 
 Output:
-  results/exp_map/data/directions/dirs_gemma_L2_random.pkl
+  results/directions/dirs_gemma_L2_random.pkl
   {
     'directions': {f'random_{i:03d}': Tensor[D]},
     'family':     'random',
@@ -17,7 +17,7 @@ Output:
 No model load needed.
 
 Usage:
-  python scripts/exp_map/random_directions.py
+  python scripts/random_directions.py
 """
 from __future__ import annotations
 import os, sys, pickle, argparse
@@ -25,10 +25,10 @@ sys.path.insert(0, ".")
 import torch
 import torch.nn.functional as F
 
-OUT_DIR = "results/exp_map/data/directions"
+OUT_DIR = "results/directions"
 os.makedirs(OUT_DIR, exist_ok=True)
 
-# gemma-2-9b residual width (matches scripts/exp_map/lib/registry.py target=gemma)
+# gemma-2-9b residual width (matches scripts/lib/registry.py target=gemma)
 D_MODEL = 3584
 N_DIRS = 33
 SEED = 42

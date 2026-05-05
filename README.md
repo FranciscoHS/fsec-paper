@@ -21,7 +21,7 @@ bash render_figures.sh
 
 `render_figures.sh` runs each plotting script in turn and copies the
 output to a paper-side filename under
-`results/exp_map/figures/paper/`. The seven files it produces are
+`results/figures/paper/`. The seven files it produces are
 exactly the ones included from `paper.tex`:
 
 | Figure | Output |
@@ -48,7 +48,7 @@ data/                Contrastive prompt sets used to build the 33
                      direction-of-mean (DoM) directions: 14 binary
                      semantic concepts, 10 natural languages, 9
                      programming languages.
-scripts/exp_map/
+scripts/
   lib/               Shared library: direction registry, parametric
                      2-direction grid, superellipse fitter, anchor
                      activation pipeline.
@@ -68,8 +68,8 @@ scripts/exp_map/
                      the direction-type beeswarm.
   plotting/          One file per paper figure. Read PKLs from
                      results/, write PDF + PNG to
-                     results/exp_map/figures/.
-results/exp_map/data/
+                     results/figures/.
+results/
   directions/        DoM and baseline-family direction caches
                      (`dirs_<target>_L<layer>[_variant].pkl`).
   fits/              Per-condition fitted exponents
@@ -92,11 +92,11 @@ you regenerate the cached PKLs:
 
 ### Refit (no GPU)
 
-Regenerate `results/exp_map/data/fits/*` from the bundled
+Regenerate `results/fits/*` from the bundled
 `sweeps_2d/*` cache. Useful for double-checking the fitting protocol.
 
 ```bash
-python scripts/exp_map/refit_thrfixed_all.py --exact
+python scripts/refit_thrfixed_all.py --exact
 ```
 
 Runtime: a few minutes for all conditions.
@@ -110,11 +110,11 @@ own account before running.
 
 ```bash
 # canonical Gemma run
-python scripts/exp_map/sweep_2d.py --target gemma --layer 2
+python scripts/sweep_2d.py --target gemma --layer 2
 
 # repeat for each cross-model column
 for tgt in qwen llama mistral aya yi; do
-    python scripts/exp_map/sweep_2d.py --target $tgt --layer 2
+    python scripts/sweep_2d.py --target $tgt --layer 2
 done
 ```
 

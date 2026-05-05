@@ -1,6 +1,6 @@
 """Beeswarm with one column per direction family.
 
-Default family set (Plans/exp_map_better_baselines.md):
+Default family set:
 
   1. Contrastive (DoM)
   2. MELBO
@@ -27,7 +27,7 @@ import os, sys, pickle, argparse
 sys.path.insert(0, ".")
 import numpy as np
 
-from scripts.exp_map.plotting.plot_robustness_beeswarm import (
+from scripts.plotting.plot_robustness_beeswarm import (
     render, _load_fit_pair_dict, _filter_by_overlap,
     _filter_exclude,
     DATA_DIR, FITS_DIR, OUT_DIR,

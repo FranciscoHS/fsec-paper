@@ -21,7 +21,7 @@ verticals at each curve's plateau-breaking angle (linear interp of the
 median curve across T).
 
 Usage:
-  python scripts/exp_map/plotting/plot_combo_sweep.py \\
+  python scripts/plotting/plot_combo_sweep.py \\
       --target gemma --d1 Gender --d2 Tense --layer 2 --max_angle 25
 """
 from __future__ import annotations
@@ -32,8 +32,8 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-OUT_DIR = "results/exp_map/figures"
-DATA_DIR = "results/exp_map/data/sweeps_2d"
+OUT_DIR = "results/figures"
+DATA_DIR = "results/sweeps_2d"
 
 
 def crossing(angles, curve, threshold):
@@ -189,9 +189,9 @@ def main():
     _plot(diag_x, c_med, c_lo, c_hi, C_CB,
           f"{args.d1} + {args.d2}")
     if rand_curve is not None:
-        r_med, r_lo, r_hi, n_dirs = rand_curve
+        r_med, r_lo, r_hi, _n_dirs = rand_curve
         _plot(angles, r_med, r_lo, r_hi, C_RD,
-              f"random ($n={n_dirs}$)", lw=2.0, ls="--")
+              "Random", lw=2.0, ls="--")
 
     ax.axhline(T, color=C_T, ls=":", lw=1.3,
                label=rf"Threshold ($L^2 = {T:.0f}$)")

@@ -3,4 +3,4 @@ __pycache__/
 *.pyo
 .ipynb_checkpoints/
 .DS_Store
-results/exp_map/figures/
+results/figures/

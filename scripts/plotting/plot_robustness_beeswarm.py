@@ -11,15 +11,15 @@ Columns vary one axis at a time:
   4. Metric           — gemma default, fit on {L2, cos, KL}
   5. Threshold        — gemma default, threshold frac in {0.25, 0.5, 0.75}
   6. Perturb method   — gemma default, geodesic vs additive
-  7. Direction type   — (deferred — see Plans/exp_map_robustness.md)
+  7. Direction type   — (deferred)
 
-Reads fits from results/exp_map/data/fits/ and (for the threshold
+Reads fits from results/fits/ and (for the threshold
 sweep) refits the raw sweep2d pkls in
-results/exp_map/data/sweeps_2d/. Missing groups are silently skipped
+results/sweeps_2d/. Missing groups are silently skipped
 so the script can be run as data lands.
 
 Usage:
-  python scripts/exp_map/plotting/plot_robustness_beeswarm.py
+  python scripts/plotting/plot_robustness_beeswarm.py
 """
 from __future__ import annotations
 import os, sys, glob, pickle, argparse, re
@@ -29,12 +29,12 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-from scripts.exp_map.lib.superellipse import (
+from scripts.lib.superellipse import (
     extract_contour, axis_intercept, fit_superellipse, threshold_levels,
 )
 
-OUT_DIR = "results/exp_map/figures"
-DATA_DIR = "results/exp_map/data"
+OUT_DIR = "results/figures"
+DATA_DIR = "results"
 FITS_DIR = os.path.join(DATA_DIR, "fits")
 SWEEPS_DIR = os.path.join(DATA_DIR, "sweeps_2d")
 
@@ -413,7 +413,7 @@ def col_anchor_source(target: str = "gemma",
     """Anchor distribution: FineWeb-edu (existing baseline) vs Wikipedia
     English vs Wikipedia Mandarin vs Python code. Same DoM directions
     across all sub-groups; only the evaluation-anchor distribution
-    varies. See Plans/exp_map_anchor_source.md."""
+    varies."""
     out = {}
     default = load_default_fits(target, layer)
     if default:

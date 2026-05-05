@@ -15,7 +15,7 @@ import sys
 sys.path.insert(0, ".")
 from src.model import forward_from_layer_to_layer, forward_from_layer
 
-from scripts.exp_map.lib.parametrize import (
+from scripts.lib.parametrize import (
     orthonormalize, exp_map_2d, exp_map_1d,
 )
 

@@ -5,7 +5,7 @@ closed curve in (alpha_1, alpha_2). Normalize each axis by its 1D
 intercept (the alpha at which the 1D L^2 curve crosses the threshold)
 and fit p.
 
-Robustness protocol (per Plans/exp_map_workspace.md):
+Robustness protocol:
 - threshold: {0.50, 0.75} * min(max(L2_grid[:, 0]), max(L2_grid[0, :]))
 - angle range: alpha_i <= {30, 45, 60} degrees
 - bootstrap: 200 resamples of the anchor index, median + [5, 95] CI

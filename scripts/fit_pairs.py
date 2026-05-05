@@ -3,7 +3,7 @@ sweep2d pkl matching `--target`, `--layer`, and the variant tag
 encoded in `--variant_suffix` (default "" = canonical config).
 
 Output:
-  results/exp_map/data/fits/fits_<target>_L<layer>[<suffix>].pkl
+  results/fits/fits_<target>_L<layer>[<suffix>].pkl
   also prints a compact table to stdout.
 
 Variant suffix examples:
@@ -17,9 +17,9 @@ from __future__ import annotations
 import os, sys, pickle, glob, argparse
 sys.path.insert(0, ".")
 import numpy as np
-from scripts.exp_map.lib.superellipse import robust_p_fit, robust_p_fit_fixed_l2
+from scripts.lib.superellipse import robust_p_fit, robust_p_fit_fixed_l2
 
-OUT_DIR = "results/exp_map/data/fits"
+OUT_DIR = "results/fits"
 os.makedirs(OUT_DIR, exist_ok=True)
 
 
@@ -69,7 +69,7 @@ def main():
         src_suffix = f"_src{args.anchor_source}"
     match_suffix = args.variant_suffix + src_suffix
 
-    pat = (f"results/exp_map/data/sweeps_2d/sweep2d_{args.target}_L"
+    pat = (f"results/sweeps_2d/sweep2d_{args.target}_L"
            f"{args.layer}_*deg{match_suffix}.pkl")
     files = sorted(glob.glob(pat))
     if not files:

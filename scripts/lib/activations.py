@@ -7,7 +7,7 @@ Source kinds:
   code:     Python code (bigcode/the-stack-smol).
   holdout:  registry-defined holdout list, last-token activation.
 
-Cache path: results/exp_map/data/activations/acts_<target>_L<layer>_<source>.pkl
+Cache path: results/activations/acts_<target>_L<layer>_<source>.pkl
 {
   'contexts':   list[Tensor[1, T-1, D]] in float32 (CPU)
   'activations': Tensor[N, D] (last-token, float32, CPU)
@@ -25,7 +25,7 @@ import sys
 sys.path.insert(0, ".")
 from src.data import load_fineweb_fixed_length
 
-OUT_DIR = "results/exp_map/data/activations"
+OUT_DIR = "results/activations"
 os.makedirs(OUT_DIR, exist_ok=True)
 
 N_ANCHORS = 30
