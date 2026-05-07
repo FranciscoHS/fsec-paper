@@ -19,25 +19,35 @@ pip install -r requirements.txt
 bash render_figures.sh
 ```
 
-`render_figures.sh` runs each plotting script in turn and copies the
-output to a paper-side filename under
-`results/figures/paper/`. The seven files it produces are
-exactly the ones included from `paper.tex`:
+`render_figures.sh` runs every plotting script in turn. LLM figure
+outputs land in `results/figures/`; toy-model figure outputs in
+`toy_model/runs/misalignment_sweep_H1024/`.
+
+LLM figures (one per `\includegraphics` in `paper.tex`):
 
 | Figure | Output |
 | ------ | ------ |
-| Fig 1a (combo sweep)              | `combo_sweep_gemma_L2_Gender_Refusal_to25deg.pdf` |
+| Fig 1a (combo sweep)              | `combo_sweep_gemma_L2_Gender_Refusal_to50deg__to50deg_thr150.pdf` |
 | Fig 1b (fitted boundary)          | `fig3_boundary_Gender_Refusal_gemma_L2.pdf` |
 | Fig 2  (composition table)        | `composition_table_gender_tense.pdf` |
-| Fig 3  (direction-family beeswarm)| `fig_beeswarm_directions.pdf` |
-| Fig 4  (robustness beeswarm)      | `fig4_n_robust_beeswarm.pdf` |
+| Fig 3  (direction-family beeswarm)| `robustness_beeswarm_gemma_L2_..._dirfamilies_morebaselines.pdf` |
+| Fig 4  (robustness beeswarm)      | `robustness_beeswarm_gemma_L2_..._exact.pdf` |
 | Appx   (direction overlap heatmap)| `appendix_directions_overlap.pdf` |
-| Appx   (fit residuals)            | `appendix_residuals_beeswarm.pdf` |
+| Appx   (fit residuals)            | `residuals_beeswarm_gemma_L2_ov0p1_thrfixed_exact.pdf` |
 
-End-to-end runtime on a laptop: about a minute (the residuals beeswarm
-is the slowest single step at ~30s; everything else is sub-second).
-The threshold and metric ablation columns are recomputed from the
-bundled fits on every run; no hidden caches.
+Toy-model figures:
+
+| Figure | Output |
+| ------ | ------ |
+| Toy boundary (LLM Fig 1b analog) | `toy_boundary_d8192_H1024_pair2-3_taufrac0.5.pdf` |
+| Toy misalignment sweep           | `lp_vs_angle_no_feature_orth_clean.png` |
+
+End-to-end runtime on a laptop: about a minute for the LLM figures
+(residuals beeswarm is the slowest single step at ~30s). The toy
+boundary plot needs ~30 s on CPU (or seconds on a GPU); the
+misalignment sweep plot is sub-second since it only renders a cached
+NPZ. The threshold and metric ablation columns are recomputed from
+the bundled fits on every run; no hidden caches.
 
 ## Repo layout
 
@@ -79,7 +89,18 @@ results/
                      `sweep2d_<target>_L<layer>_<a>__<b>_fineweb_60deg[_variant].pkl`.
                      ~13k files, ~1.6 GB — required for the slow path
                      below.
-render_figures.sh    Top-level "rebuild every figure" entry point.
+toy_model/           Random-sparse autoencoder toy model + cached runs
+                     for the toy-model figures. See `toy_model/scripts/`
+                     and `toy_model/runs/` below.
+  scripts/           Toy-model code (BaselineConfig, build_baked_model,
+                     boundary_radii, the misalignment sweep, plotting).
+  mft_denoising/     Helper package: dataset stream + TwoLayerNet.
+  runs/misalignment_sweep_H1024/
+                     Phase 2 baked-model NPZs for d in {4096, 8192,
+                     16384}, plus the cached misalignment-sweep result
+                     used by the toy figures.
+render_figures.sh    Top-level "rebuild every figure" entry point
+                     (LLM + toy).
 LICENSE              MIT.
 requirements.txt     Python deps (numpy, scipy, matplotlib,
                      transformers, torch, datasets).
@@ -125,6 +146,34 @@ Wallclock guidance (single 80 GB H100, ~40 s/pair):
 
 After re-sweeping, regenerate the fits and figures with
 `refit_thrfixed_all.py --exact` followed by `render_figures.sh`.
+
+### Toy-model slow path (GPU helpful)
+
+The two toy-model figures read from cached NPZs under
+`toy_model/runs/misalignment_sweep_H1024/`. To regenerate those caches
+from scratch:
+
+```bash
+cd toy_model
+# Phase 2: pick (p*, c_in*, c_out*, lambda_on) per d (one Phase 2 NPZ
+# per d). ~minutes per d on a single RTX 4090.
+python -m scripts.random_sparse_phase2_pselect --d 4096  --H 1024 --lambda_on 500  --out_dir runs/misalignment_sweep_H1024
+python -m scripts.random_sparse_phase2_pselect --d 8192  --H 1024 --lambda_on 1000 --out_dir runs/misalignment_sweep_H1024
+python -m scripts.random_sparse_phase2_pselect --d 16384 --H 1024 --lambda_on 2000 --out_dir runs/misalignment_sweep_H1024
+
+# Misalignment sweep (the figure-feeding step). Default uses a feature-
+# axis-orthogonal random direction; the no_feature_orth flag samples an
+# isotropic random unit vector instead (this is the variant plotted in
+# the paper). ~4 min on RTX 4090 for the full d-sweep.
+python -m scripts.random_sparse_misalignment_sweep \
+    --ds 4096 8192 16384 --H 1024 \
+    --phase2_dir runs/misalignment_sweep_H1024 \
+    --out_dir   runs/misalignment_sweep_H1024 \
+    --no_feature_orth
+```
+
+After re-sweeping, run `bash render_figures.sh` from the repo root to
+regenerate every paper figure (LLM + toy).
 
 ### Models used
 
