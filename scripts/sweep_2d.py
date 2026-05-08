@@ -119,6 +119,13 @@ def main():
                          "Default 'fineweb' keeps the existing filename. Other "
                          "sources append a _src<label> suffix so files don't "
                          "collide with the canonical run.")
+    ap.add_argument("--perturb_pos", type=int, default=-1,
+                    help="position at which to splice perturbations and read "
+                         "out L^2. -1 (default) = last token (canonical fast "
+                         "path). Negative offsets allowed; pos != -1 forces "
+                         "fineweb anchors and appends a _pos<k> suffix to the "
+                         "filename. Direction is reused from the canonical "
+                         "last-token DoM cache (see PLAN_position_ablation.md).")
     args = ap.parse_args()
 
     cfg = registry.TARGETS[args.target]
@@ -164,13 +171,12 @@ def main():
                     line = line.strip()
                     if not line or line.startswith("#"): continue
                     parts = [p.strip() for p in line.split(",")]
-                    # Plain 'a,b' lines, optionally with an 'a,b' header.
-                    if len(parts) == 2 and tuple(p.lower() for p in parts) == ("a", "b"):
-                        continue                        # header
-                    if len(parts) == 2:
-                        a, b = parts
-                    else:
+                    if len(parts) < 2:
                         continue
+                    # 'a,b' header line (optionally with extra cols)
+                    if tuple(p.lower() for p in parts[:2]) == ("a", "b"):
+                        continue
+                    a, b = parts[0], parts[1]   # ignore any extra cols
                     pair_list.append((a, b))
             print(f"[{ts()}] loaded {len(pair_list)} pairs from "
                   f"{args.pairs_file}", flush=True)
@@ -202,25 +208,46 @@ def main():
 
     # Anchor activations (shared across pairs). Source defaults to FineWeb;
     # plan exp_map_anchor_source.md adds wiki_en, wiki_zh, code as ablations.
-    print(f"[{ts()}] loading anchors (source={args.anchor_source})", flush=True)
-    if args.anchor_source == "fineweb":
-        fw = actlib.fineweb_acts(model, tokenizer, device, args.target,
-                                  perturb_layer, n=N_ANCHORS)
-    elif args.anchor_source == "wiki_en":
-        fw = actlib.wiki_acts(model, tokenizer, device, args.target,
-                               perturb_layer, n=N_ANCHORS, language="en")
-    elif args.anchor_source == "wiki_zh":
-        fw = actlib.wiki_acts(model, tokenizer, device, args.target,
-                               perturb_layer, n=N_ANCHORS, language="zh")
-    elif args.anchor_source == "code":
-        fw = actlib.code_acts(model, tokenizer, device, args.target,
-                               perturb_layer, n=N_ANCHORS)
+    # Token-position ablation (--perturb_pos != -1) takes a separate code
+    # path that stores the full residual stream + position-`pos` activation
+    # and is fineweb-only (see PLAN_position_ablation.md).
+    full_hidden_list = None
+    if args.perturb_pos != -1:
+        if args.anchor_source != "fineweb":
+            raise ValueError(
+                "--perturb_pos != -1 currently requires --anchor_source=fineweb")
+        print(f"[{ts()}] loading anchors (fineweb, pos={args.perturb_pos})",
+              flush=True)
+        fw = actlib.fineweb_acts_at_pos(
+            model, tokenizer, device, args.target, perturb_layer,
+            pos=args.perturb_pos, n=N_ANCHORS)
+        full_hidden_list = fw["full_hidden"]
+        activations = torch.stack(fw["pos_act"])
+        contexts = None
+        print(f"  N={len(activations)}, pos={args.perturb_pos}, "
+              f"||pos_act||={activations.norm(dim=-1).mean():.2f}",
+              flush=True)
     else:
-        raise ValueError(f"unknown anchor_source {args.anchor_source}")
-    contexts = fw["contexts"]
-    activations = fw["activations"]
-    print(f"  N={len(activations)}, ||a||={activations.norm(dim=-1).mean():.2f}",
-          flush=True)
+        print(f"[{ts()}] loading anchors (source={args.anchor_source})",
+              flush=True)
+        if args.anchor_source == "fineweb":
+            fw = actlib.fineweb_acts(model, tokenizer, device, args.target,
+                                      perturb_layer, n=N_ANCHORS)
+        elif args.anchor_source == "wiki_en":
+            fw = actlib.wiki_acts(model, tokenizer, device, args.target,
+                                   perturb_layer, n=N_ANCHORS, language="en")
+        elif args.anchor_source == "wiki_zh":
+            fw = actlib.wiki_acts(model, tokenizer, device, args.target,
+                                   perturb_layer, n=N_ANCHORS, language="zh")
+        elif args.anchor_source == "code":
+            fw = actlib.code_acts(model, tokenizer, device, args.target,
+                                   perturb_layer, n=N_ANCHORS)
+        else:
+            raise ValueError(f"unknown anchor_source {args.anchor_source}")
+        contexts = fw["contexts"]
+        activations = fw["activations"]
+        print(f"  N={len(activations)}, ||a||={activations.norm(dim=-1).mean():.2f}",
+              flush=True)
 
     if args.dense_max is not None:
         if args.dense_step is None or args.coarse_step is None:
@@ -265,6 +292,8 @@ def main():
         # and friends parse it as a fixed delimiter). The actual anchor
         # distribution is encoded by this `_src<label>` suffix.
         variant_suffix += f"_src{args.anchor_source}"
+    if args.perturb_pos != -1:
+        variant_suffix += f"_pos{args.perturb_pos}"
 
     for (a, b) in pair_list:
         if a not in all_dirs or b not in all_dirs:
@@ -283,7 +312,9 @@ def main():
                                 perturb_layer, measure_layer, device,
                                 angles_rad, mode=args.mode,
                                 record_cos=record_cos, record_kl=record_kl,
-                                single_batch_ref=args.single_batch_ref)
+                                single_batch_ref=args.single_batch_ref,
+                                pos=args.perturb_pos,
+                                full_hidden_list=full_hidden_list)
         l2 = r["l2"]
         print(f"  {a:>10s} x {b:<10s} {time.time()-t0:.1f}s "
               f"l2_max={l2.max():.2f}", flush=True)
@@ -307,6 +338,7 @@ def main():
             "perturb_layer": perturb_layer,
             "measure_layer": measure_layer,
             "measure_offset": args.measure_offset,
+            "perturb_pos": args.perturb_pos,
             "mode": args.mode,
             "metrics": sorted(metric_set),
             "direction_labels": (a, b),

@@ -47,6 +47,12 @@ CONDITIONS = [
     ("gemma",   2, "_dirsae_eval",    "fineweb", "l2"),
     ("gemma",   2, "_dirsae_fineweb", "fineweb", "l2"),
     ("gemma",   2, "_dirpca_fineweb", "fineweb", "l2"),
+    # Token-position ablation (gemma) — perturb at non-final positions.
+    # pos=-5 with seq_len=5 lands on Gemma's BOS (an attention-sink
+    # position with anomalous geometry); the kept clean far-back data
+    # point is pos=-3.
+    ("gemma",   2, "_pos-2", "fineweb", "l2"),
+    ("gemma",   2, "_pos-3", "fineweb", "l2"),
 ]
 
 

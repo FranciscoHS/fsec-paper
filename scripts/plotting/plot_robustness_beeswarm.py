@@ -12,6 +12,7 @@ Columns vary one axis at a time:
   5. Threshold        — gemma default, threshold frac in {0.25, 0.5, 0.75}
   6. Perturb method   — gemma default, geodesic vs additive
   7. Direction type   — (deferred)
+  8. Token position   — gemma default, perturbation site in {-1, -2, -3}
 
 Reads fits from results/fits/ and (for the threshold
 sweep) refits the raw sweep2d pkls in
@@ -481,6 +482,46 @@ def col_pair_kind(target: str = "gemma",
     return out
 
 
+def col_token_position(target: str = "gemma",
+                        layer: int = 2,
+                        max_overlap: float | None = None
+                        ) -> dict[str, dict[frozenset, float]]:
+    """Token position at which the perturbation is spliced in (and L^2
+    is read out). pos=-1 (canonical) is the standard last-token site;
+    pos=-2 and pos=-3 are the same ablation 1-2 positions back. All
+    three sub-groups are restricted to the same 318 cosine-filtered
+    pairs (|<d_a, d_b>| <= 0.10) used in the position sweep, so the
+    comparison is controlled — same physical pairs, different sites."""
+    csv_path = os.path.join(DATA_DIR, "pos_pairs_gemma_L2.csv")
+    if not os.path.exists(csv_path):
+        return {}
+    allowed: set[frozenset] = set()
+    with open(csv_path) as f:
+        next(f)
+        for line in f:
+            parts = [p.strip() for p in line.split(",")]
+            if len(parts) >= 2:
+                allowed.add(frozenset({parts[0], parts[1]}))
+    out = {}
+    default = load_default_fits(target, layer)
+    if default:
+        canon = {k: v for k, v in default.items()
+                 if np.isfinite(v) and k in allowed}
+        if canon: out[r"pos $-1$"] = canon
+    extra = _fits_suffix()
+    for label, suffix in [(r"pos $-2$", "_pos-2"),
+                          (r"pos $-3$", "_pos-3")]:
+        fp = os.path.join(FITS_DIR,
+                           f"fits_{target}_L{layer}{suffix}{extra}.pkl")
+        d = _load_fit_pair_dict(fp)
+        if d:
+            d = {k: v for k, v in d.items() if k in allowed}
+            if d: out[label] = d
+    out = {k: _filter_by_overlap(v, target, layer, max_overlap)
+           for k, v in out.items()}
+    return out
+
+
 def col_direction_type(target: str = "gemma",
                         layer: int = 2,
                         max_overlap: float | None = None
@@ -498,11 +539,20 @@ def col_direction_type(target: str = "gemma",
         dom = {k: v for k, v in default.items() if np.isfinite(v)}
         dom = _filter_by_overlap(dom, target, layer, max_overlap)
         out["DoM contrastive"] = dom
-    families = [("SAE decoder",    "_dirsae_random"),
+    # SAE = top SAE-decoder rows by mean |activation| on a 10k FineWeb
+    # sample (scripts/sae_directions_top.py --rank_set fineweb). PCA =
+    # top-33 right singular vectors of the same FineWeb activation
+    # sample. The earlier "_dirsae_random" baseline picked latent
+    # indices uniformly at random, which is the wrong SAE baseline for
+    # this comparison.
+    families = [("SAE decoder",    "_dirsae_fineweb"),
+                ("PCA",            "_dirpca_fineweb"),
                 ("MELBO",          "_dirmelbo"),
                 ("random",         "_dirrandom")]
+    extra = _fits_suffix()
     for label, suffix in families:
-        fp = os.path.join(FITS_DIR, f"fits_{target}_L{layer}{suffix}.pkl")
+        fp = os.path.join(FITS_DIR,
+                           f"fits_{target}_L{layer}{suffix}{extra}.pkl")
         d = _load_fit_pair_dict(fp)
         if d: out[label] = d
     return out
@@ -696,7 +746,7 @@ def main():
     ap.add_argument("--target", default="gemma",
                     help="default target for the 'vary one axis' columns")
     ap.add_argument("--layer", type=int, default=2)
-    ap.add_argument("--columns", default="model,perturb,measure,metric,threshold,method,direction,anchor_source",
+    ap.add_argument("--columns", default="model,perturb,measure,metric,threshold,method,anchor_source,position",
                     help="comma-separated subset of columns to plot")
     ap.add_argument("--max_overlap", type=float, default=None,
                     help="filter pairs by raw DoM overlap |<d1,d2>|. "
@@ -753,6 +803,8 @@ def main():
         _add("Direction family", col_direction_type(args.target, args.layer, max_overlap=mo))
     if "anchor_source" in args.columns:
         _add("Anchor source", col_anchor_source(args.target, args.layer, max_overlap=mo))
+    if "position" in args.columns:
+        _add("Token position", col_token_position(args.target, args.layer, max_overlap=mo))
     if "pair_kind" in args.columns:
         # Each pair-kind gets its own column so the cluster structure
         # reads horizontally (low-n high-overlap clusters on the left,
@@ -788,7 +840,7 @@ def main():
     # Distinguish a non-default --columns choice in the filename so we
     # don't overwrite the canonical full-beeswarm pdf.
     cols_tag = ("" if args.columns ==
-                "model,perturb,measure,metric,threshold,method,direction,anchor_source"
+                "model,perturb,measure,metric,threshold,method,anchor_source,position"
                 else "_" + args.columns.replace(",", "+"))
     out_png = os.path.join(
         OUT_DIR,

@@ -127,6 +127,64 @@ def fineweb_acts(model, tokenizer, device, target: str, layer: int,
                          token_loader, n, seq_len, seed)
 
 
+def fineweb_acts_at_pos(model, tokenizer, device, target: str, layer: int,
+                         pos: int = -1, n: int = N_ANCHORS,
+                         seq_len: int = SEQ_LEN, seed: int = SEED) -> dict:
+    """Same anchors / seed as fineweb_acts (parity required for the
+    pos == -1 equivalence test) but stores the FULL residual stream at
+    `layer` (all positions) and the activation at position `pos`. Used by
+    sweep_2d.py --perturb_pos for the token-position ablation: perturb at
+    position `pos`, splice through the model, read out at position `pos`.
+
+    Cache path: results/activations/acts_<target>_L<layer>_fineweb_pos<k>.pkl
+    (separate from the canonical 30-anchor cache so the two coexist).
+
+    Returns:
+      {
+        'full_hidden': list of (1, T_i, D)   # residual stream at `layer`
+        'pos_act':     list of (D,)          # activation at position `pos`
+        'pos':         int,
+        'seed':        int,
+        ...standard metadata...
+      }
+    Drops any anchor with T_i < |pos| (typically 0 for fixed-length seqs).
+    """
+    cache_pkl = os.path.join(
+        OUT_DIR, f"acts_{target}_L{layer}_fineweb_pos{pos}.pkl")
+    if os.path.exists(cache_pkl):
+        with open(cache_pkl, "rb") as f:
+            return pickle.load(f)
+    cache_dir = f"/workspace/fineweb_cache_{target}"
+    os.makedirs(cache_dir, exist_ok=True)
+    token_lists = load_fineweb_fixed_length(
+        n, tokenizer, seq_len=seq_len, seed=seed, cache_dir=cache_dir)
+    full_hidden, pos_act = [], []
+    n_dropped = 0
+    for tids in token_lists:
+        T_i = tids.shape[0]
+        if T_i < abs(pos):
+            n_dropped += 1
+            continue
+        tids_b = tids.unsqueeze(0).to(device)
+        with torch.no_grad():
+            outs = model(tids_b, output_hidden_states=True)
+        h = outs.hidden_states[layer + 1]   # (1, T, D)
+        full_hidden.append(h.float().cpu())
+        pos_act.append(h[0, pos, :].float().cpu())
+    if n_dropped:
+        print(f"  fineweb_acts_at_pos: dropped {n_dropped} anchors with "
+              f"T<|pos={pos}|", flush=True)
+    out = {"full_hidden": full_hidden, "pos_act": pos_act,
+           "pos": pos, "source": "fineweb", "layer": layer,
+           "seed": seed, "n": len(full_hidden), "seq_len": seq_len,
+           "prompt_set_hash": None}
+    tmp = cache_pkl + ".tmp"
+    with open(tmp, "wb") as f:
+        pickle.dump(out, f)
+    os.replace(tmp, cache_pkl)
+    return out
+
+
 def fineweb_acts_n(model, tokenizer, device, target: str, layer: int,
                     n: int, seq_len: int = SEQ_LEN, seed: int = SEED,
                     batch_size: int = 32) -> dict:

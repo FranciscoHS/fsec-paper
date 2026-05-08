@@ -2,12 +2,11 @@
 conditions, mirroring plot_robustness_beeswarm.py.
 
 Y-axis is the median ``mean_radial_frac`` across the per-pair
-robustness cells (one number per pair). The 8 columns are the same
-seven ablations as the robustness beeswarm (Model, Perturb layer,
-Measure layer, Metric, Threshold, Method, Anchor source) plus a
-Direction family column (Contrastive / MELBO / SAE / PCA / Random)
-so the reader can also see that residuals stay similarly small for
-non-contrastive direction sets.
+robustness cells (one number per pair). Columns: the seven ablations
+shared with the robustness beeswarm (Model, Perturb layer, Measure
+layer, Metric, Threshold, Method, Anchor source), then Token position
+(pos -1 / -2 / -3), then Direction family (Contrastive / MELBO / SAE
+/ PCA / Random) at the right edge.
 
 We reuse the existing ``render`` and column loaders by monkey-patching
 ``plot_robustness_beeswarm.median_p_for_pair`` to return the median
@@ -25,9 +24,9 @@ import numpy as np
 import scripts.plotting.plot_robustness_beeswarm as P
 from scripts.plotting.plot_robustness_beeswarm import (
     col_model, col_perturb_layer, col_measure_layer, col_metric,
-    col_method, col_anchor_source,
+    col_method, col_anchor_source, col_token_position,
     _apply_filters, _filter_exclude,
-    _filter_by_overlap, render, FITS_DIR, OUT_DIR,
+    _filter_by_overlap, render, FITS_DIR, OUT_DIR, DATA_DIR,
 )
 from scripts.plotting.plot_beeswarm_direction_types import (
     _filter_family_overlap, FAMILIES,
@@ -109,6 +108,7 @@ def main():
         ("Response threshold",  col_threshold_residual(target, layer, max_overlap=mo)),
         ("Perturbation method", col_method(target, layer, max_overlap=mo)),
         ("Anchor source",       col_anchor_source(target, layer, max_overlap=mo)),
+        ("Token position",      col_token_position(target, layer, max_overlap=mo)),
     ]
     cols = [(label, _apply_filters(d, target, layer, mo, excl))
             for label, d in cols]

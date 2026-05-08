@@ -13,7 +13,8 @@ import torch.nn.functional as F
 
 import sys
 sys.path.insert(0, ".")
-from src.model import forward_from_layer_to_layer, forward_from_layer
+from src.model import (forward_from_layer_to_layer, forward_from_layer,
+                       forward_from_layer_to_layer_at_pos)
 
 from scripts.lib.parametrize import (
     orthonormalize, exp_map_2d, exp_map_1d,
@@ -78,7 +79,9 @@ def sweep_2d_one_anchor(model, ctx, anchor, d1, d2, perturb_layer: int,
                         mode: str = "geodesic",
                         record_cos: bool = False,
                         record_kl: bool = False,
-                        single_batch_ref: bool = False) -> dict:
+                        single_batch_ref: bool = False,
+                        pos: int = -1,
+                        full_hidden=None) -> dict:
     """2D grid sweep in (alpha_1, alpha_2).
 
     Returns dict with at least 'l2': (n, n); optionally 'cos': 1 - cos sim
@@ -94,6 +97,14 @@ def sweep_2d_one_anchor(model, ctx, anchor, d1, d2, perturb_layer: int,
     a ~few-units L^2 floor at alpha=(0,0). Requires enough VRAM to hold
     n*n inputs and intermediate activations; not currently supported
     with record_kl (which would need a separate full-model forward).
+
+    Token-position ablation: pos != -1 routes through
+    forward_from_layer_to_layer_at_pos with `full_hidden: (1, T, D)`
+    (residual stream at perturb_layer, all positions) and `anchor` =
+    activation at position `pos`. d1, d2 are still applied as
+    perturbation directions in the tangent plane at anchor/||anchor||,
+    and L^2 is read at position `pos`. record_kl and single_batch_ref
+    are not supported when pos != -1.
     """
     model_dtype = next(model.parameters()).dtype
     a32 = anchor.to(torch.float32)
@@ -104,6 +115,38 @@ def sweep_2d_one_anchor(model, ctx, anchor, d1, d2, perturb_layer: int,
     pts = pts32.to(model_dtype)
     n_total = pts.shape[0]
     n = len(alphas_rad)
+
+    if pos != -1:
+        if full_hidden is None:
+            raise ValueError("full_hidden required when pos != -1")
+        if record_kl:
+            raise NotImplementedError(
+                "record_kl not supported when pos != -1")
+        if single_batch_ref:
+            raise NotImplementedError(
+                "single_batch_ref not supported when pos != -1")
+        fh = full_hidden.to(device=device, dtype=model_dtype)
+        # Reference: splice the anchor itself back at `pos`. Round-trip
+        # equivalent to running the unperturbed full_hidden, and matches
+        # the bf16 batched-matmul shape the perturbed forward sees.
+        ref_act = forward_from_layer_to_layer_at_pos(
+            model, fh, a32.to(model_dtype).unsqueeze(0),
+            pos, perturb_layer, measure_layer).float()
+        l2 = np.zeros(n_total, dtype=np.float32)
+        cos = np.zeros(n_total, dtype=np.float32) if record_cos else None
+        for st in range(0, n_total, batch_size):
+            ed = min(st + batch_size, n_total)
+            pf = forward_from_layer_to_layer_at_pos(
+                model, fh, pts[st:ed],
+                pos, perturb_layer, measure_layer).float()
+            l2[st:ed] = (pf - ref_act).norm(dim=-1).cpu().numpy()
+            if record_cos:
+                cos[st:ed] = (1.0 - F.cosine_similarity(ref_act, pf, dim=-1)
+                              ).cpu().numpy()
+        out = {"l2": l2.reshape(n, n)}
+        if record_cos:
+            out["cos"] = cos.reshape(n, n)
+        return out
 
     if single_batch_ref:
         if record_kl:
@@ -175,9 +218,17 @@ def run_2d_per_anchors(model, contexts, activations, d1, d2,
                         alphas_rad, mode: str = "geodesic",
                         record_cos: bool = False,
                         record_kl: bool = False,
-                        single_batch_ref: bool = False) -> dict:
+                        single_batch_ref: bool = False,
+                        pos: int = -1,
+                        full_hidden_list=None) -> dict:
     """Per-metric grids of shape (n_anchors, n, n). Always includes 'l2';
-    optionally 'cos' and 'kl' if requested."""
+    optionally 'cos' and 'kl' if requested.
+
+    Token-position ablation: pos != -1 requires
+    `full_hidden_list[i]: (1, T, D)` (residual stream at perturb_layer,
+    all positions) and `activations[i]` should be the activation at
+    position `pos`. `contexts` is unused in that case.
+    """
     model_dtype = next(model.parameters()).dtype
     n = len(alphas_rad)
     out = {"l2": np.zeros((len(activations), n, n), dtype=np.float32)}
@@ -185,8 +236,15 @@ def run_2d_per_anchors(model, contexts, activations, d1, d2,
         out["cos"] = np.zeros_like(out["l2"])
     if record_kl:
         out["kl"] = np.zeros_like(out["l2"])
+    if pos != -1 and full_hidden_list is None:
+        raise ValueError("full_hidden_list required when pos != -1")
     for i in range(len(activations)):
-        ctx = contexts[i].to(device=device, dtype=model_dtype)
+        if pos != -1:
+            ctx = None
+            fh = full_hidden_list[i]
+        else:
+            ctx = contexts[i].to(device=device, dtype=model_dtype)
+            fh = None
         a = activations[i].to(device=device)
         d1_dev = d1.to(device=device, dtype=torch.float32)
         d2_dev = d2.to(device=device, dtype=torch.float32)
@@ -194,7 +252,8 @@ def run_2d_per_anchors(model, contexts, activations, d1, d2,
                                 perturb_layer, measure_layer, device,
                                 alphas_rad, mode=mode,
                                 record_cos=record_cos, record_kl=record_kl,
-                                single_batch_ref=single_batch_ref)
+                                single_batch_ref=single_batch_ref,
+                                pos=pos, full_hidden=fh)
         for k in out:
             out[k][i] = r[k]
     return out

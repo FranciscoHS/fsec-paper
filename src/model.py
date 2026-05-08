@@ -502,6 +502,54 @@ def forward_from_layer_to_layer(model, context, point, start_layer, end_layer):
     return hidden[:, -1, :]
 
 
+def forward_from_layer_to_layer_at_pos(model, full_hidden, perturbed,
+                                       pos, start_layer, end_layer):
+    """
+    Forward from start_layer to end_layer (inclusive), splicing `perturbed`
+    at position `pos`. Returns position-`pos` residual stream after end_layer.
+
+    Generalizes forward_from_layer_to_layer to non-final positions: when
+    pos == -1 the result is mathematically identical (cat of prefix and
+    last-token activation), so callers using pos == -1 stay on the same
+    code path as the canonical forward up to bf16 noise.
+
+    Args:
+        model: GPT-2 or Llama-arch model
+        full_hidden: [1, T, D] - Full residual stream at start_layer
+        perturbed:   [n, D]    - Replacement values for position `pos`
+        pos: int (may be negative) - position at which to splice
+        start_layer: Layer index (0-indexed). Runs blocks starting from
+            start_layer+1.
+        end_layer: Layer index (0-indexed, inclusive). Runs blocks through
+            end_layer.
+
+    Returns:
+        pos_act: [n, D] - Residual stream at position `pos` after end_layer
+    """
+    n = perturbed.shape[0]
+    T = full_hidden.shape[1]
+    if pos < 0:
+        pos = T + pos
+    if pos < 0 or pos >= T:
+        raise ValueError(f"pos out of range: T={T}, pos={pos}")
+    expanded = full_hidden.expand(n, T, -1)
+    pre = expanded[:, :pos, :]
+    post = expanded[:, pos + 1:, :]
+    hidden = torch.cat([pre, perturbed.unsqueeze(1), post], dim=1)
+
+    blocks = _get_blocks(model)
+    pos_emb = None
+    if _is_rope_model(model):
+        pos_emb = _get_position_embeddings(model, hidden)
+    elif _is_cat_pos_emb_model(model):
+        pos_emb = _get_cat_pos_emb(model, hidden.shape[1])
+
+    for block in blocks[start_layer + 1:end_layer + 1]:
+        hidden = _run_block(block, hidden, model, pos_emb)
+
+    return hidden[:, pos, :]
+
+
 def forward_from_layer_to_final(model, context, point, start_layer):
     """
     Forward from layer L to final transformer block (no ln_f, no unembedding).
