@@ -44,18 +44,26 @@ never needed the 2D interior; the new method just makes the anchor set explicit
 
 ## Work plan
 
-1. **Random directions for all models.** `scripts/random_directions.py` hardcodes
-   gemma's `D=3584`; generalize to each model's residual width (llama, qwen,
-   mistral, aya, yi). Output `dirs_<model>_L2_random.pkl`.
-2. **1D random sweeps.** ~33 single random directions per model, 0-60 deg.
-   - gemma: already have random×random 2D sweeps; reuse the `g[:,0]` edge.
-   - other 5 models: new cheap 1D GPU sweeps (needs a pod).
-3. **Rewrite threshold computation** in `scripts/recommend_fixed_threshold.py`:
-   replace `axis_max_per_pair` / `scan_target_layer` (feature-pair, min-of-two-
-   axes) with the random-direction median plateau height above.
-4. **Recompute + re-render.** Re-run `scripts/refit_thrfixed_all.py` ->
-   `fit_pairs.py`, then `render_figures.sh`.
-5. **Manuscript prose** (separate repo, `error-correction-paper`): rewrite the
+1. **[done] Random directions for all models.** `scripts/random_directions.py`
+   generalized to per-target residual width (WIDTHS); generated
+   `dirs_<model>_L2_random.pkl` for llama/qwen/mistral/aya/yi (no GPU).
+2. **[done] Threshold rewrite.** `scripts/recommend_fixed_threshold.py` now
+   computes `T = f * median(random plateau height)` from the EDGES of random x
+   random sweeps. `scripts/refit_thrfixed_all.py` builds the matching random-ref
+   suffix per condition (`ref_random_suffix`) and defaults `f = 0.5`.
+   `scripts/sweep_2d.py` now honours `--pairs`/`--pairs_file` in the
+   `--directions_pkl` branch so we sweep only a 17-pair reference set, not 528.
+3. **[done, no GPU] Gemma cells from existing data.** The gemma main cell + all
+   6 direction-family cells share the existing `_dirrandom` sweeps; regenerated
+   their `_thrfixed_exact` fits with the new T (= 123, was ~150).
+4. **[GPU] Random-reference sweeps for the remaining 17 conditions.** Driver:
+   `scripts/run_random_ref_sweeps.sh` (17 pairs each, resumable). Conditions:
+   5 other models at L2; gemma L5/L10/L20, M-7/M-12, additive, src
+   wiki_en/wiki_zh/code, cos+kl+l2, pos-2/pos-3.
+5. **[after GPU] Recompute + re-render.** `refit_thrfixed_all.py --exact` (the
+   figures consume `_thrfixed_exact` fits, NOT plain `_thrfixed`), then
+   `render_figures.sh`.
+6. **Manuscript prose** (separate repo, `error-correction-paper`): rewrite the
    threshold paragraph; clarify or remove the "plateau" framing and the
    "population" / "smaller of two maxima" wording.
 

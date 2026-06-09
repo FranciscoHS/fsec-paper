@@ -1,6 +1,8 @@
-"""Build a cache of 33 isotropic random unit directions at gemma-2-9b's
-residual width (D=3584). For the direction-type column of the exp_map
-robustness beeswarm.
+"""Build a cache of 33 isotropic random unit directions at a target model's
+residual width (--target picks the width from WIDTHS). Used both for the
+direction-type column of the exp_map robustness beeswarm and as the anchor
+set for the random-direction reference threshold (see
+scripts/recommend_fixed_threshold.py).
 
 Output:
   results/directions/dirs_gemma_L2_random.pkl
@@ -28,8 +30,17 @@ import torch.nn.functional as F
 OUT_DIR = "results/directions"
 os.makedirs(OUT_DIR, exist_ok=True)
 
-# gemma-2-9b residual width (matches scripts/lib/registry.py target=gemma)
-D_MODEL = 3584
+# Residual-stream widths per target (constant across layers). Used to build
+# isotropic random unit directions without loading the model. Must match
+# scripts/lib/registry.py TARGETS.
+WIDTHS = {
+    "gemma":   3584,  # gemma-2-9b
+    "llama":   4096,  # llama-3.1-8b
+    "qwen":    2048,  # qwen3-1.7b
+    "mistral": 4096,  # mistral-7b-v0.3
+    "aya":     4096,  # aya-expanse-8b
+    "yi":      4096,  # yi-1.5-9b
+}
 N_DIRS = 33
 SEED = 42
 
@@ -37,11 +48,17 @@ SEED = 42
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--n", type=int, default=N_DIRS)
-    ap.add_argument("--d", type=int, default=D_MODEL)
+    ap.add_argument("--d", type=int, default=None,
+                    help="residual width. Defaults to WIDTHS[target].")
     ap.add_argument("--seed", type=int, default=SEED)
     ap.add_argument("--target", default="gemma")
     ap.add_argument("--layer", type=int, default=2)
     args = ap.parse_args()
+    if args.d is None:
+        if args.target not in WIDTHS:
+            ap.error(f"unknown target {args.target!r}; pass --d explicitly "
+                     f"(known: {sorted(WIDTHS)})")
+        args.d = WIDTHS[args.target]
 
     g = torch.Generator().manual_seed(args.seed)
     raw = torch.randn(args.n, args.d, generator=g)

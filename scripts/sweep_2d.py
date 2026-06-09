@@ -154,9 +154,25 @@ def main():
         signs = dirs_blob.get("signs", {n: "ext" for n in all_dirs})
         family = dirs_blob.get("family", "ext")
         names = sorted(all_dirs.keys())
-        pair_list = [(names[i], names[j])
-                     for i in range(len(names))
-                     for j in range(i + 1, len(names))]
+        if args.pairs_file:
+            # explicit subset of pairs (e.g. a small reference set that covers
+            # every direction once, for the random-direction threshold).
+            pair_list = []
+            with open(args.pairs_file) as f:
+                for line in f:
+                    line = line.strip()
+                    if not line or line.startswith("#"): continue
+                    parts = [p.strip() for p in line.split(",")]
+                    if len(parts) < 2: continue
+                    if tuple(p.lower() for p in parts[:2]) == ("a", "b"): continue
+                    pair_list.append((parts[0], parts[1]))
+        elif args.pairs:
+            pair_list = [tuple(c.split(",")[0:2]) for c in args.pairs.split(";")]
+            pair_list = [(a.strip(), b.strip()) for a, b in pair_list]
+        else:
+            pair_list = [(names[i], names[j])
+                         for i in range(len(names))
+                         for j in range(i + 1, len(names))]
         if args.shard:
             i, N = (int(x) for x in args.shard.split("/"))
             pair_list = pair_list[i::N]

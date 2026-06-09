@@ -1,16 +1,31 @@
 """Run fit_pairs.py with a per-condition fixed-L^2 (or fixed-metric)
 threshold. For each condition (target, layer, variant_suffix, metric,
 anchor_source), compute the recommended threshold as
-f × median(axis_max) over the matching sweeps, and call fit_pairs.py.
+f × median(random-direction plateau height) over the matching random x random
+reference sweeps, and call fit_pairs.py.
 
 Saves to fits/fits_<target>_L<layer><suffix>_thrfixed.pkl.
 """
 from __future__ import annotations
-import os, sys, subprocess, argparse
+import os, sys, re, subprocess, argparse
 sys.path.insert(0, ".")
 import numpy as np
 
 from scripts.recommend_fixed_threshold import scan_target_layer
+
+
+def ref_random_suffix(vsuf: str, asrc: str) -> str:
+    """Full variant suffix of the random reference sweep for this condition,
+    matching sweep_2d.py's filename order: [M][mode][metric] _dirrandom
+    [_pos] [_src]. The reference shares the perturbation/measurement settings
+    but swaps the direction family to random (every direction-family cell
+    therefore anchors on the same main random sweep)."""
+    v = re.sub(r"_dir[A-Za-z0-9_]+", "", vsuf)        # drop the dir family
+    m = re.search(r"_pos-?\d+", v)
+    pos = m.group(0) if m else ""                     # _pos goes after dirrandom
+    pre = v.replace(pos, "")                          # M / mode / metric: before
+    src = f"_src{asrc}" if asrc != "fineweb" else ""  # _src goes after dirrandom
+    return f"{pre}_dirrandom{pos}{src}"
 
 # (target, layer, variant_suffix, anchor_source, metric)
 # variant_suffix matches the sweep filename suffix appended after the
@@ -58,9 +73,9 @@ CONDITIONS = [
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--f", type=float, default=0.40,
-                    help="threshold = f × median(axis_max). Default 0.40 "
-                         "(matches the eyeballed Gemma L^2=150).")
+    ap.add_argument("--f", type=float, default=0.50,
+                    help="threshold = f × median(random plateau height). "
+                         "Default 0.50; ablated downstream.")
     ap.add_argument("--f_kl", type=float, default=0.10,
                     help="KL surfaces saturate far below the f=0.40 "
                          "threshold for most pairs, so we use a smaller "
@@ -80,12 +95,11 @@ def main():
     print(f"f = {args.f}\n")
     for tgt, L, vsuf, asrc, metric in CONDITIONS:
         if only and tgt not in only: continue
-        # axis-max distribution for this exact condition
-        sweep_suffix = vsuf
-        if asrc != "fineweb": sweep_suffix += f"_src{asrc}"
-        vals = scan_target_layer(tgt, L, sweep_suffix.lstrip("_"), metric)
+        # random-direction plateau heights for this exact condition
+        vals = scan_target_layer(tgt, L, ref_random_suffix(vsuf, asrc), metric)
         if not vals:
-            print(f"[skip] {tgt} L={L} vsuf='{vsuf}' src={asrc} metric={metric}: no sweeps")
+            print(f"[skip] {tgt} L={L} vsuf='{vsuf}' src={asrc} metric={metric}: "
+                  f"no random reference sweeps")
             continue
         med = float(np.median(vals))
         f = args.f_kl if metric == "kl" else args.f
