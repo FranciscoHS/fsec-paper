@@ -57,6 +57,13 @@ python scripts/plotting/plot_residuals_beeswarm.py
       --phase2_npz runs/misalignment_sweep_H1024/phase2_d8192_H1024.npz \
       --out_dir   runs/misalignment_sweep_H1024
 
+  # Toy sweep plot (appendix) — Fig-1a-equivalent: L^2 response vs
+  # perturbation magnitude along feature axes, their combination, and a
+  # random-direction baseline, with the plateau-breaking threshold.
+  python -m scripts.plot_toy_sweep \
+      --phase2_npz runs/misalignment_sweep_H1024/phase2_d8192_H1024.npz \
+      --out_dir   runs/misalignment_sweep_H1024
+
   # Toy misalignment sweep — fitted superellipse exponent vs cosine
   # similarity to the feature axes (median over 80 pairs, IQR shaded).
   # Reads the bundled lp_vs_angle_no_feature_orth.npz; pure CPU plot.
