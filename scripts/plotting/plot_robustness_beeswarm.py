@@ -108,15 +108,19 @@ def _apply_filters(subs: dict[str, dict[frozenset, float]],
     return out
 
 
+CANONICAL_CELL = ("1.0xT", 60.0)  # single fit at the threshold, full window
+
+
 def median_p_for_pair(robust_fit_dict) -> float:
-    """One number per pair: median p over the 6 robustness cells."""
-    ps = []
-    for k, cell in robust_fit_dict.items():
-        if k == "__levels__": continue
-        if np.isfinite(cell.get("p_median", np.nan)):
-            ps.append(cell["p_median"])
-    if not ps: return np.nan
-    return float(np.median(ps))
+    """One number per pair: the single fit at the threshold (1.0xT) on the
+    full 60-degree window. No median over threshold factors / angle windows
+    -- those cells exist only to feed the threshold-robustness column. NaN
+    if that cell is missing or didn't fit."""
+    cell = robust_fit_dict.get(CANONICAL_CELL)
+    if cell is None:
+        return np.nan
+    p = cell.get("p_median", np.nan)
+    return float(p) if np.isfinite(p) else np.nan
 
 
 USE_THRFIXED = False  # toggled via main() / module-level setter

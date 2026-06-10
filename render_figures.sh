@@ -7,15 +7,19 @@ cd "$(dirname "$0")"
 # LLM figures (read PKLs from results/, write PDF + PNG to results/figures/).
 # ----------------------------------------------------------------------
 
-# Fig 1a — combo sweep (Gender x Refusal, 0..50 deg, threshold L^2=150)
+# Fig 1a — combo sweep (Gender x Refusal, 0..50 deg). Threshold is the
+# new random-direction reference scale for gemma L2: T = 0.5 * median
+# random plateau = 123 (recompute via recommend_fixed_threshold.py if f
+# changes). The line sits at half the random-baseline median plateau, so
+# the figure visually demonstrates the definition.
 python scripts/plotting/plot_combo_sweep.py \
     --target gemma --layer 2 \
     --d1 Gender --d2 Refusal \
-    --max_angle 50 --threshold 150 --out_tag _to50deg_thr150
+    --max_angle 50 --threshold 123 --out_tag _to50deg_thr123
 
-# Fig 1b — fitted boundary
+# Fig 1b — fitted boundary (same random-reference threshold T=123)
 python scripts/plotting/plot_fig3_boundary.py \
-    --target gemma --layer 2 --d1 Gender --d2 Refusal
+    --target gemma --layer 2 --d1 Gender --d2 Refusal --thresh 123
 
 # Fig 2 — composition table (static, no PKL inputs)
 python scripts/plotting/plot_composition_table.py

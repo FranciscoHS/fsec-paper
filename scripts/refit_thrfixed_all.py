@@ -76,10 +76,11 @@ def main():
     ap.add_argument("--f", type=float, default=0.50,
                     help="threshold = f × median(random plateau height). "
                          "Default 0.50; ablated downstream.")
-    ap.add_argument("--f_kl", type=float, default=0.10,
-                    help="KL surfaces saturate far below the f=0.40 "
-                         "threshold for most pairs, so we use a smaller "
-                         "f for KL only.")
+    ap.add_argument("--f_kl", type=float, default=0.50,
+                    help="separate f for the KL metric cell. Kept uniform "
+                         "with --f by default: the random reference is "
+                         "measured in KL's own units, so no special-casing "
+                         "is needed (override if a KL contour fails to close).")
     ap.add_argument("--dry_run", action="store_true",
                     help="just print the planned commands; don't run.")
     ap.add_argument("--only", default="",

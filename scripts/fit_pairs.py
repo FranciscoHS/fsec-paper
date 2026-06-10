@@ -86,7 +86,12 @@ def main():
         grid = d[args.metric]   # (n_anchors, n, n)
         a, b = d["direction_labels"]
         if args.thresh_l2 is not None:
+            # Single 60-degree fit window (no angle sweep): the reported p
+            # is one fit on the full iso-T contour. Threshold factors are
+            # kept so the threshold-robustness column (contrastive only)
+            # still has 0.5x/1x/2x cells.
             fit = robust_p_fit_fixed_l2(ang, grid, args.thresh_l2,
+                                         max_alphas=(60.0,),
                                          n_bootstrap=args.n_bootstrap,
                                          exact_geodesic=args.exact)
         else:

@@ -34,15 +34,13 @@ from scripts.plotting.plot_beeswarm_direction_types import (
 
 
 def median_residual_for_pair(robust_fit_dict) -> float:
-    """One number per pair: median of mean_radial_frac across the
-    (threshold x range) cells in the robust_p_fit output."""
-    rs = []
-    for k, cell in robust_fit_dict.items():
-        if k == "__levels__": continue
-        r = cell.get("mean_radial_frac", np.nan)
-        if isinstance(r, float) and np.isfinite(r):
-            rs.append(r)
-    return float(np.median(rs)) if rs else float("nan")
+    """One number per pair: the residual of the single threshold fit
+    (1.0xT, full 60-degree window), matching median_p_for_pair."""
+    cell = robust_fit_dict.get(("1.0xT", 60.0))
+    if cell is None:
+        return float("nan")
+    r = cell.get("mean_radial_frac", np.nan)
+    return float(r) if isinstance(r, float) and np.isfinite(r) else float("nan")
 
 
 def col_threshold_residual(target: str, layer: int,
