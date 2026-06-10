@@ -70,6 +70,11 @@ def main():
     ap.add_argument("--threshold_frac", type=float, default=0.50,
                     help="when --threshold is omitted, threshold = "
                          "frac * min(axis maxes).")
+    ap.add_argument("--show_bands", action="store_true",
+                    help="draw the per-anchor IQR band. Off by default: the "
+                         "band shows anchor-magnitude spread common to all "
+                         "curves and hides the (significant) paired "
+                         "feature-vs-random difference.")
     ap.add_argument("--n_random", type=int, default=10,
                     help="how many random-direction sweep pkls to "
                          "include for the random baseline curve "
@@ -181,7 +186,14 @@ def main():
     C_T  = "#444444"
 
     def _plot(x, med, lo, hi, color, label, lw=2.4, ls="-"):
-        ax.fill_between(x, lo, hi, color=color, alpha=0.18)
+        # Median curves only. The per-anchor IQR band was dropped: absolute
+        # L^2 varies ~2x across anchors, a spread common to every curve, so
+        # marginal bands hide the comparison. The curves share anchors
+        # (correlated), so the paired per-anchor difference is what is
+        # significant (feature exceeds random for >=80% of anchors; paired
+        # CI excludes 0 at all angles) -- stated in the caption instead.
+        if args.show_bands:
+            ax.fill_between(x, lo, hi, color=color, alpha=0.18)
         ax.plot(x, med, ls, color=color, lw=lw, label=label)
 
     _plot(angles, g_med, g_lo, g_hi, C_D1, args.d1)
