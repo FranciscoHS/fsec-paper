@@ -7,34 +7,40 @@ cd "$(dirname "$0")"
 # LLM figures (read PKLs from results/, write PDF + PNG to results/figures/).
 # ----------------------------------------------------------------------
 
-# Fig 1a — combo sweep (Gender x Refusal, 0..50 deg). Threshold is the
-# new random-direction reference scale for gemma L2: T = 0.5 * median
-# random plateau = 123 (recompute via recommend_fixed_threshold.py if f
-# changes). The line sits at half the random-baseline median plateau, so
-# the figure visually demonstrates the definition.
+# Fig 1 — combo sweep (Wealth x Gender, 0..50 deg). Threshold is the
+# per-pair scale T_pair = 0.5 * min(axis maxima) on this pair's own median
+# grid (= 139 for Wealth x Gender at gemma L2). Omitting --threshold lets
+# the script compute it, so the line is the same per-pair contour level the
+# exponent is fit on.
 python scripts/plotting/plot_combo_sweep.py \
     --target gemma --layer 2 \
-    --d1 Gender --d2 Refusal \
-    --max_angle 50 --threshold 123 --out_tag _to50deg_thr123
+    --d1 Wealth --d2 Gender \
+    --max_angle 50 --out_tag thrpair
 
-# Fig 1b — fitted boundary (same random-reference threshold T=123)
+# Fig 2 — fitted boundary (same per-pair threshold T_pair=139, auto-computed)
 python scripts/plotting/plot_fig3_boundary.py \
-    --target gemma --layer 2 --d1 Gender --d2 Refusal --thresh 123
+    --target gemma --layer 2 --d1 Wealth --d2 Gender --exact
 
-# Fig 2 — composition table (static, no PKL inputs)
-python scripts/plotting/plot_composition_table.py
+# Fig 3 — composition table (static, no PKL inputs)
+python scripts/plotting/plot_composition_table_wealth_gender.py
 
-# Fig 3 — direction-family beeswarm
+# Fig 4 — direction-family beeswarm (includes the random-difference baseline
+# column; reads fits_gemma_L2_dirrandomdiffavg_fineweb_thrpair_exact.pkl)
 python scripts/plotting/plot_beeswarm_direction_types.py \
     --target gemma --layer 2 --max_overlap 0.10 \
     --exclude_dirs HonestyShort,TensePresent,Formal \
-    --use_thrfixed --exact
+    --use_thrpair --exact
 
-# Fig 4 — robustness beeswarm across ablation axes
+# Fig 5 — LLM misalignment sweep: fitted p vs rotation off the contrastive
+# directions toward random (reads fits_gemma_L2_dirrotcontrastive_*_thrpair_exact.pkl)
+python -m scripts.plotting.plot_misalignment_llm \
+    --target gemma --layer 2 --exact
+
+# Fig 6 — robustness beeswarm across ablation axes
 python scripts/plotting/plot_robustness_beeswarm.py \
     --target gemma --layer 2 --max_overlap 0.10 \
     --exclude_dirs Formal,HonestyShort,TensePresent \
-    --use_thrfixed --exact
+    --use_thrpair --exact
 
 # Appendix — direction-overlap heatmap + LaTeX longtable
 python scripts/plotting/build_directions_appendix.py

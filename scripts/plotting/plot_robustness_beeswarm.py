@@ -123,15 +123,24 @@ def median_p_for_pair(robust_fit_dict) -> float:
     return float(p) if np.isfinite(p) else np.nan
 
 
-USE_THRFIXED = False  # toggled via main() / module-level setter
+USE_THRFIXED = False  # legacy global (random-anchored) threshold — retired
+USE_THRPAIR = False   # per-pair threshold (current protocol)
 USE_EXACT = False     # toggled via main() / module-level setter
+
+
+def _thr_mode() -> bool:
+    """True when a multi-factor threshold protocol is in use (per-pair or
+    the legacy global), so col_threshold reads the 0.5/1/2 x T cells."""
+    return USE_THRPAIR or USE_THRFIXED
 
 
 def _fits_suffix() -> str:
     """Trailing suffix on every fits filename driven by global config:
-    '_thrfixed' if USE_THRFIXED, with '_exact' appended if USE_EXACT."""
+    '_thrpair' (per-pair, current) or '_thrfixed' (legacy global), with
+    '_exact' appended if USE_EXACT."""
     s = ""
-    if USE_THRFIXED: s += "_thrfixed"
+    if USE_THRPAIR: s += "_thrpair"
+    elif USE_THRFIXED: s += "_thrfixed"
     if USE_EXACT: s += "_exact"
     return s
 
@@ -352,7 +361,7 @@ def col_threshold(target: str = "gemma",
     """Iso-contour threshold = fraction of per-pair max axis L^2.
     In fixed-T mode, loads the _thrfixed fits and splits per
     threshold_factor sub-group (0.5×T / 1.0×T / 2.0×T)."""
-    if USE_THRFIXED:
+    if _thr_mode():
         out = {}
         fp = os.path.join(FITS_DIR,
                            f"fits_{target}_L{layer}{_fits_suffix()}.pkl")
@@ -564,10 +573,24 @@ def col_direction_type(target: str = "gemma",
 
 # ----- rendering -----
 
+def _wrap_label(s: str) -> str:
+    """Split a multi-word column label into two balanced lines so columns
+    can stay narrow (a narrower figure scales down less in print)."""
+    words = s.split()
+    if len(words) < 2:
+        return s
+    best, best_diff = (s, ""), 10**9
+    for i in range(1, len(words)):
+        a, b = " ".join(words[:i]), " ".join(words[i:])
+        if abs(len(a) - len(b)) < best_diff:
+            best_diff, best = abs(len(a) - len(b)), (a, b)
+    return best[0] + "\n" + best[1]
+
+
 def render(columns_data, png_path, pdf_path,
             show_sub_legends: bool = True,
             show_stats_text: bool = False,
-            ylabel: str = r"fitted superellipse exponent $p$",
+            ylabel: str = "superellipse\nexponent $p$",
             ref_y: float | None = 2.0,
             ref_label: str = r"$p=2$ (Euclidean)",
             ylim: tuple[float, float] | None = None,
@@ -595,13 +618,13 @@ def render(columns_data, png_path, pdf_path,
     # doesn't overflow into the next column. Also widened for plain
     # mode at the new larger fontsize so multi-word column labels (e.g.
     # "Perturbation method") don't collide with their neighbours.
-    width_per_col = 4.6 if show_stats_text else 3.4
-    fig, ax = plt.subplots(figsize=(width_per_col * n_cols + 2.5, 8.0))
+    width_per_col = 2.9 if show_stats_text else 2.2
+    fig, ax = plt.subplots(figsize=(width_per_col * n_cols + 1.6, 4.8))
     rng = np.random.RandomState(0)
 
     x_pos = 1.0
-    label_y_main = -0.03
-    label_y_legend = -0.10
+    label_y_main = -0.04
+    label_y_legend = -0.33
 
     for col_label, subs in columns_data:
         sub_labels = list(subs)
@@ -638,27 +661,27 @@ def render(columns_data, png_path, pdf_path,
                 ax.errorbar(x_s, m_s,
                             yerr=[[m_s - lo_s], [hi_s - m_s]],
                             fmt="D", color=color, ecolor=color,
-                            markersize=7, markerfacecolor="white",
-                            markeredgewidth=1.8, elinewidth=1.5,
-                            capsize=4, capthick=1.5, zorder=5)
+                            markersize=10, markerfacecolor="white",
+                            markeredgewidth=2.0, elinewidth=1.8,
+                            capsize=5, capthick=1.8, zorder=5)
             med_s = float(np.median(data))
             half_bar = 0.30 / max(n_sub_plot, 1)
             ax.hlines(med_s, x_s - half_bar, x_s + half_bar,
-                      colors=color, lw=2.5, zorder=6)
+                      colors=color, lw=3.2, zorder=6)
         # Plot each sub-group's dots at the SAME x_pos, colour-coded.
         for s_idx, sub in enumerate(sub_labels):
             data = np.array(list(subs[sub].values()))
             if not len(data): continue
             xs = x_pos + rng.uniform(-0.30, 0.30, size=len(data))
             color = SUB_COLORS[s_idx % len(SUB_COLORS)]
-            ax.scatter(xs, data, color=color, s=12, alpha=0.28,
+            ax.scatter(xs, data, color=color, s=26, alpha=0.30,
                        edgecolor="none", zorder=3, label=sub)
         # Per-column legend (small, just below the column label).
         # Anchor uses get_xaxis_transform so x is in DATA coords (matches
         # the column's x_pos exactly) and y is in axes-fraction.
         leg_handles = [plt.Line2D([0], [0], marker="o", color=color,
                                   markeredgecolor="none", linestyle="",
-                                  markersize=6,
+                                  markersize=9,
                                   label=sub)
                        for s_idx, sub in enumerate(sub_labels)
                        for color in [SUB_COLORS[s_idx % len(SUB_COLORS)]]
@@ -667,28 +690,29 @@ def render(columns_data, png_path, pdf_path,
             # Two-line treatment: family name (larger, semibold) on top,
             # mean + 95% CI underneath in smaller font. Median stays as
             # the black bar inside the panel.
-            ax.text(x_pos, label_y_main, col_label,
+            ax.text(x_pos, label_y_main, _wrap_label(col_label),
                     ha="center", va="top",
                     transform=ax.get_xaxis_transform(),
-                    fontsize=22 * fontscale, fontweight="semibold",
-                    color="#222")
-            ax.text(x_pos, label_y_main - 0.07,
-                    f"mean = {mean:.2f}\n[{lo:.2f}, {hi:.2f}]",
+                    fontsize=19 * fontscale, fontweight="semibold",
+                    linespacing=1.05, color="#222")
+            ax.text(x_pos, label_y_main - 0.155,
+                    f"mean {mean:.2f}\n[{lo:.2f}, {hi:.2f}]",
                     ha="center", va="top",
                     transform=ax.get_xaxis_transform(),
-                    fontsize=20 * fontscale, color="#444",
-                    linespacing=1.05)
+                    fontsize=14 * fontscale, color="#444",
+                    linespacing=1.1)
         else:
-            ax.text(x_pos, label_y_main, col_label, ha="center", va="top",
+            ax.text(x_pos, label_y_main, _wrap_label(col_label),
+                    ha="center", va="top",
                     transform=ax.get_xaxis_transform(),
-                    fontsize=18 * fontscale,
+                    fontsize=18 * fontscale, linespacing=1.05,
                     fontweight="bold", color="#222")
         if leg_handles and show_sub_legends:
             leg = ax.legend(handles=leg_handles,
                             loc="upper center",
                             bbox_to_anchor=(x_pos, label_y_legend),
                             bbox_transform=ax.get_xaxis_transform(),
-                            ncol=1, fontsize=18 * fontscale, frameon=False,
+                            ncol=1, fontsize=12.5 * fontscale, frameon=False,
                             handlelength=1.4, handletextpad=0.6,
                             borderaxespad=0.0,
                             labelcolor="linecolor")
@@ -712,7 +736,7 @@ def render(columns_data, png_path, pdf_path,
     median_handle = plt.Line2D([0], [0], color="black", lw=2.5,
                                label="median")
     legend_handles += [mean_handle, median_handle]
-    ax.set_ylabel(ylabel, fontsize=24 * fontscale)
+    ax.set_ylabel(ylabel, fontsize=16 * fontscale, linespacing=1.0)
     ax.tick_params(axis="y", labelsize=20 * fontscale)
     if ylim is not None:
         ax.set_ylim(*ylim)
@@ -720,24 +744,28 @@ def render(columns_data, png_path, pdf_path,
     ax.set_xticks([])
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
+    # Legend ABOVE the plot (out of the data) spread horizontally.
     ax.legend(handles=legend_handles,
-              loc="upper right", fontsize=18 * fontscale,
-              frameon=True, framealpha=0.9)
+              loc="lower right", bbox_to_anchor=(1.0, 1.005),
+              ncol=len(legend_handles), fontsize=15 * fontscale,
+              frameon=False, columnspacing=1.4, handletextpad=0.5)
     # Manual layout — tight_layout clobbers the legend anchor placement.
     # Reserve bottom margin for per-column color legends; if those are
     # off, the column labels alone need only a small margin.
     if show_sub_legends:
-        bottom = 0.34
+        bottom = 0.48
     elif show_stats_text:
         # room for family name + two-line CI block, scaled with fontsize
-        bottom = 0.18 + 0.06 * fontscale
+        bottom = 0.30 + 0.04 * fontscale
     else:
-        bottom = 0.08
-    fig.subplots_adjust(left=0.04, right=0.995, top=0.97, bottom=bottom)
+        bottom = 0.10
+    # top leaves room for the legend just above the axes; left for the
+    # (two-line) y-label; bottom for the column labels/legends.
+    fig.subplots_adjust(left=0.075, right=0.995, top=0.88, bottom=bottom)
     os.makedirs(os.path.dirname(png_path), exist_ok=True)
-    # Don't use bbox_inches="tight" — it crops the per-column legends
-    # (which live in the bottom margin via xaxis-transform anchors) out
-    # of the saved figure.
+    # No bbox_inches="tight": it crops the per-column legends, which live
+    # in the bottom margin via xaxis-transform anchors. Manual margins
+    # above reserve the needed space instead.
     fig.savefig(png_path, dpi=220, facecolor="white")
     fig.savefig(pdf_path, facecolor="white")
     plt.close(fig)
@@ -764,11 +792,15 @@ def main():
                          "of these names is excluded). Use to prune "
                          "redundant directions at plot time without "
                          "re-running fits.")
+    ap.add_argument("--use_thrpair", action="store_true",
+                    help="load fits_<...>_thrpair.pkl files (current "
+                         "protocol): each sweep uses its own per-pair "
+                         "threshold T_pair = 0.5*min(axis maxima), from "
+                         "refit_thrpair_all.py.")
     ap.add_argument("--use_thrfixed", action="store_true",
-                    help="load fits_<...>_thrfixed.pkl files instead "
-                         "of canonical fits. Each condition uses its "
-                         "own per-condition fixed L^2 (or fixed metric) "
-                         "threshold from refit_thrfixed_all.py.")
+                    help="(legacy, retired) load fits_<...>_thrfixed.pkl, "
+                         "the global random-anchored threshold. Superseded "
+                         "by --use_thrpair.")
     ap.add_argument("--exact", action="store_true",
                     help="load exact-geodesic fits (fits_<...>_exact.pkl "
                          "or fits_<...>_thrfixed_exact.pkl) instead of "
@@ -780,8 +812,9 @@ def main():
                          "spacing so the CI text doesn't overflow into "
                          "neighbouring columns.")
     args = ap.parse_args()
-    global USE_THRFIXED, USE_EXACT
+    global USE_THRFIXED, USE_THRPAIR, USE_EXACT
     USE_THRFIXED = args.use_thrfixed
+    USE_THRPAIR = args.use_thrpair
     USE_EXACT = args.exact
 
     mo = args.max_overlap
@@ -839,7 +872,8 @@ def main():
     overlap_tag = (f"_ov{args.max_overlap:g}".replace(".", "p")
                    if args.max_overlap is not None else "")
     excl_tag = f"_excl-{'-'.join(sorted(excl))}" if excl else ""
-    if args.use_thrfixed: excl_tag += "_thrfixed"
+    if args.use_thrpair: excl_tag += "_thrpair"
+    elif args.use_thrfixed: excl_tag += "_thrfixed"
     if args.exact: excl_tag += "_exact"
     # Distinguish a non-default --columns choice in the filename so we
     # don't overwrite the canonical full-beeswarm pdf.

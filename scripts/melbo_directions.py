@@ -85,7 +85,7 @@ def main():
 
     print(f"[{ts()}] loading {args.n} FineWeb sequences (seed={args.seed})",
           flush=True)
-    cache_dir = f"/workspace/fineweb_cache_{args.target}"
+    cache_dir = f"{os.environ.get('FSEC_CACHE_DIR', 'cache')}/fineweb_cache_{args.target}"
     os.makedirs(cache_dir, exist_ok=True)
     token_lists = load_fineweb_fixed_length(
         args.n, tokenizer, seq_len=args.seq_len, seed=args.seed,

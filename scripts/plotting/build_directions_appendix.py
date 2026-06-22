@@ -154,10 +154,6 @@ def main():
     ax.set_yticklabels(keep, fontsize=8)
     ax.tick_params(axis="both", which="both", length=0)
 
-    for b in boundaries:
-        ax.axhline(b - 0.5, color="black", lw=1.0, alpha=0.85)
-        ax.axvline(b - 0.5, color="black", lw=1.0, alpha=0.85)
-
     # Family block labels along the diagonal of each block.
     block_starts = [0] + boundaries + [len(keep)]
     for s, e in zip(block_starts[:-1], block_starts[1:]):

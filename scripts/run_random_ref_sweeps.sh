@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+# RETIRED (per-pair threshold switch). No longer part of the pipeline: the
+# threshold is now computed per-pair from each sweep's own grid, so the random-
+# direction reference sweeps below are no longer needed. Kept for provenance.
+#
 # Generate the random-direction REFERENCE sweeps used to set the per-condition
 # threshold T = 0.5 * median_i(max_alpha mean_anchors metric(alpha; random_i)).
 #

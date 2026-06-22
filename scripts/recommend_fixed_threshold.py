@@ -1,4 +1,9 @@
-"""Recommended threshold = the random-direction reference scale:
+"""RETIRED (per-pair threshold switch). No longer part of the pipeline:
+the threshold is now computed per-pair from each sweep's own grid (see
+``fit_pairs.py --per_pair_threshold`` and ``refit_thrpair_all.py``), so the
+random-direction reference scale below is unused. Kept for provenance only.
+
+Recommended threshold = the random-direction reference scale:
 
     T = f * median_i [ max_alpha  mean_anchors  metric(alpha; random_i) ]
 

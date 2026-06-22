@@ -10,7 +10,12 @@ Default family set:
                        a 10k-prompt FineWeb sample
   5. PCA-FineWeb    — top-33 right singular vectors of the same 10k
                        FineWeb activations (PCA, no SAE basis)
-  6. Random         — isotropic unit vectors
+  6. Random-diff    — 40 construction-matched non-feature controls: each
+                       is a mean of K=30 differences of randomly paired
+                       FineWeb activations, normalized (the contrastive
+                       estimator with random instead of concept-matched
+                       pairs). Reads the ``randomdiffavg_fineweb`` family.
+  7. Random         — isotropic unit vectors
 
 Every column is overlap-filtered at ``|cos| < max_overlap`` against its
 own direction set (not just the Contrastive set as the original beeswarm
@@ -41,6 +46,7 @@ FAMILIES = [
     ("MELBO",        "_dirmelbo",       "_melbo",         True),
     ("SAE",          "_dirsae_fineweb", "_sae_fineweb",   True),
     ("PCA",          "_dirpca_fineweb", "_pca_fineweb",   True),
+    ("Random-diff",  "_dirrandomdiffavg_fineweb", "_randomdiffavg_fineweb", True),
     ("Random",       "_dirrandom",      "_random",        True),
 ]
 
@@ -110,12 +116,15 @@ def main():
                     help="DoM-only: comma-sep names to drop (e.g. "
                          "HonestyShort,TensePresent,Formal). Other "
                          "families don't share these names.")
+    ap.add_argument("--use_thrpair", action="store_true",
+                    help="load fits_<...>_thrpair.pkl files (current "
+                         "per-pair-threshold protocol).")
     ap.add_argument("--use_thrfixed", action="store_true",
-                    help="load fits_<...>_thrfixed.pkl files instead "
-                         "of canonical fits.")
+                    help="(legacy, retired) load fits_<...>_thrfixed.pkl, "
+                         "the global random-anchored threshold.")
     ap.add_argument("--exact", action="store_true",
                     help="load the exact-geodesic fits (fits_<...>_exact"
-                         ".pkl or fits_<...>_thrfixed_exact.pkl) and "
+                         ".pkl or fits_<...>_thrpair_exact.pkl) and "
                          "append '_exact' to the output filename.")
     ap.add_argument("--include_sae_random", action="store_true",
                     help="also include the original SAE-random column "
@@ -123,7 +132,7 @@ def main():
                          "now that SAE-eval and SAE-FineWeb subsume it.")
     args = ap.parse_args()
     excl = {n.strip() for n in args.exclude_dirs.split(",") if n.strip()}
-    thr = "_thrfixed" if args.use_thrfixed else ""
+    thr = "_thrpair" if args.use_thrpair else ("_thrfixed" if args.use_thrfixed else "")
     if args.exact: thr += "_exact"
 
     families = list(FAMILIES)
@@ -165,7 +174,8 @@ def main():
     overlap_tag = (f"_ov{args.max_overlap:g}".replace(".", "p")
                    if args.max_overlap is not None else "")
     excl_tag = f"_excl-{'-'.join(sorted(excl))}" if excl else ""
-    if args.use_thrfixed: excl_tag += "_thrfixed"
+    if args.use_thrpair: excl_tag += "_thrpair"
+    elif args.use_thrfixed: excl_tag += "_thrfixed"
     if args.exact: excl_tag += "_exact"
     if args.include_sae_random: excl_tag += "_withsaerand"
     out_png = os.path.join(
@@ -174,7 +184,7 @@ def main():
         f"{overlap_tag}{excl_tag}_dirfamilies_morebaselines.png")
     out_pdf = out_png.replace(".png", ".pdf")
     render(columns, out_png, out_pdf, show_sub_legends=False,
-           show_stats_text=True, fontscale=1.4)
+           show_stats_text=True, fontscale=1.4, ylim=(1.0, 4.0))
 
 
 if __name__ == "__main__":

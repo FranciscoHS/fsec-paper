@@ -101,38 +101,61 @@ def main():
           f"mean_radial_frac = {fit['mean_radial_frac']:.3f}   "
           f"n_pts = {fit['n_pts']}")
 
+    # Plot in the SAME space the super-ellipse was fit in. For --exact the
+    # fit uses sin-geodesic coords (sin(alpha)cos phi / sin(theta_i)), so the
+    # displayed axes, reference curves, data and fitted curve must all go
+    # through sin() too -- otherwise the green fit (a super-ellipse in
+    # sin-space) would be drawn in raw-degree space where it is no longer
+    # that super-ellipse. The display semi-axes are sin(theta_i); for the
+    # small-angle (non-exact) fit sin() is dropped and the axes stay in raw
+    # degrees. In both cases the displayed points are cn_norm * (A1, A2),
+    # which reduces to cn_raw exactly when non-exact (A_i = theta_i).
+    if args.exact:
+        A1 = float(np.sin(np.deg2rad(theta1)))
+        A2 = float(np.sin(np.deg2rad(theta2)))
+    else:
+        A1, A2 = theta1, theta2
+    disp = cn_norm * np.array([A1, A2])
+
     fig, ax = plt.subplots(figsize=(5.8, 5.8))
-    # tick spacing chosen to give ~5–7 ticks across each raw-degree axis
-    def _tickspacing(span):
-        targets = [0.5, 1, 2, 5, 10, 15, 20, 25, 50]
-        return next((t for t in targets if span / t <= 8), 50)
-    sp1 = _tickspacing(theta1 * 1.15)
-    sp2 = _tickspacing(theta2 * 1.15)
-    ax.set_xticks(np.arange(0, theta1 * 1.18 + 1e-6, sp1))
-    ax.set_yticks(np.arange(0, theta2 * 1.18 + 1e-6, sp2))
+    if args.exact:
+        # sin-space axes span ~[0, sin(theta)] < 1; let matplotlib pick
+        # round sin-unit ticks rather than the degree spacing below.
+        from matplotlib.ticker import MaxNLocator
+        ax.xaxis.set_major_locator(MaxNLocator(nbins=6))
+        ax.yaxis.set_major_locator(MaxNLocator(nbins=6))
+    else:
+        # tick spacing chosen to give ~5–7 ticks across each raw-degree axis
+        def _tickspacing(span):
+            targets = [0.5, 1, 2, 5, 10, 15, 20, 25, 50]
+            return next((t for t in targets if span / t <= 8), 50)
+        sp1 = _tickspacing(A1 * 1.15)
+        sp2 = _tickspacing(A2 * 1.15)
+        ax.set_xticks(np.arange(0, A1 * 1.18 + 1e-6, sp1))
+        ax.set_yticks(np.arange(0, A2 * 1.18 + 1e-6, sp2))
     ax.grid(True, which="major", color="#bbbbbb", lw=0.5, alpha=0.45)
 
-    # p=infinity rectangle with semi-axes theta1, theta2
+    # p=infinity rectangle with semi-axes (A1, A2)
     xi, yi = superellipse_curve(20)
-    ax.plot(theta1 * xi, theta2 * yi, ls=(0, (1.8, 2.5)),
+    ax.plot(A1 * xi, A2 * yi, ls=(0, (1.8, 2.5)),
             color="#D9822B", lw=1.6, alpha=0.95,
             label=r"Per-feature threshold ($p\to\infty$)")
-    # p=2 ellipse with semi-axes theta1, theta2
+    # p=2 ellipse with semi-axes (A1, A2)
     xc, yc = superellipse_curve(2)
-    ax.plot(theta1 * xc, theta2 * yc, "-",
+    ax.plot(A1 * xc, A2 * yc, "-",
             color="#1F77B4", lw=2.6, alpha=0.95,
             label=r"Euclidean combination ($p=2$)")
 
-    cont_angle = np.arctan2(cn_raw[:, 1], cn_raw[:, 0])
+    cont_angle = np.arctan2(disp[:, 1], disp[:, 0])
     order = np.argsort(cont_angle)
     res_pct = 100.0 * fit["mean_radial_frac"]
-    # Fitted super-ellipse, scaled to (theta1, theta2).
+    # Fitted super-ellipse, scaled to (A1, A2).
     xf, yf = superellipse_curve(p_fit)
-    ax.plot(theta1 * xf, theta2 * yf, "-",
+    ax.plot(A1 * xf, A2 * yf, "-",
             color="#3a7d3a", lw=2.0, alpha=0.95,
             label=rf"Super-ellipse fit ($p_{{\mathrm{{fit}}}} = {p_fit:.2f}$)",
             zorder=4)
-    ax.plot(cn_raw[order, 0], cn_raw[order, 1], "o",
+    ax.plot(disp[order, 0], disp[order, 1], "o",
             color="#3a3a3a", markersize=4.0, alpha=0.85,
             markeredgecolor="none",
             label="Data",
@@ -141,14 +164,12 @@ def main():
     print(f"Caption stat: residual = {res_pct:.2f}%  (n_pts = "
           f"{fit['n_pts']})")
 
-    ax.set_xlim(-0.03 * theta1, 1.15 * theta1)
-    ax.set_ylim(-0.03 * theta2, 1.15 * theta2)
+    ax.set_xlim(-0.03 * A1, 1.15 * A1)
+    ax.set_ylim(-0.03 * A2, 1.15 * A2)
     ax.set_aspect("equal")
     if args.exact:
-        x_lab = (rf"$\sin\alpha(\varphi_i)\cos\varphi_i$  "
-                 rf"({args.d1}, deg)")
-        y_lab = (rf"$\sin\alpha(\varphi_i)\sin\varphi_i$  "
-                 rf"({args.d2}, deg)")
+        x_lab = rf"$\sin\alpha(\varphi_i)\cos\varphi_i$  ({args.d1})"
+        y_lab = rf"$\sin\alpha(\varphi_i)\sin\varphi_i$  ({args.d2})"
     else:
         x_lab = rf"$\alpha(\varphi_i)\cos\varphi_i$  ({args.d1}, deg)"
         y_lab = rf"$\alpha(\varphi_i)\sin\varphi_i$  ({args.d2}, deg)"

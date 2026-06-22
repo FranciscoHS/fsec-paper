@@ -187,7 +187,7 @@ def load_fineweb_samples(n, tokenizer, min_tokens=10, max_tokens=512, seed=42):
     return texts, token_counts
 
 
-def load_fineweb_fixed_length(n, tokenizer, seq_len=5, seed=42, cache_dir="/workspace/fineweb_cache",
+def load_fineweb_fixed_length(n, tokenizer, seq_len=5, seed=42, cache_dir="cache/fineweb_cache",
                               add_special_tokens=True):
     """
     Load FineWeb samples tokenized to exactly seq_len tokens.

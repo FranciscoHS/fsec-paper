@@ -28,6 +28,11 @@ from src.data import load_fineweb_fixed_length
 OUT_DIR = "results/activations"
 os.makedirs(OUT_DIR, exist_ok=True)
 
+# Root for streamed-text token caches (FineWeb/Wikipedia/code). Override
+# with FSEC_CACHE_DIR; defaults to a local ./cache directory so the
+# upstream extraction scripts run anywhere, not just on a /workspace mount.
+CACHE_ROOT = os.environ.get("FSEC_CACHE_DIR", "cache")
+
 N_ANCHORS = 30
 SEQ_LEN = 5
 SEED = 42
@@ -118,7 +123,7 @@ def _anchor_acts(model, tokenizer, device, target: str, layer: int,
 def fineweb_acts(model, tokenizer, device, target: str, layer: int,
                  n: int = N_ANCHORS, seq_len: int = SEQ_LEN,
                  seed: int = SEED) -> dict:
-    cache_dir = f"/workspace/fineweb_cache_{target}"
+    cache_dir = f"{CACHE_ROOT}/fineweb_cache_{target}"
     os.makedirs(cache_dir, exist_ok=True)
     def token_loader():
         return load_fineweb_fixed_length(
@@ -154,7 +159,7 @@ def fineweb_acts_at_pos(model, tokenizer, device, target: str, layer: int,
     if os.path.exists(cache_pkl):
         with open(cache_pkl, "rb") as f:
             return pickle.load(f)
-    cache_dir = f"/workspace/fineweb_cache_{target}"
+    cache_dir = f"{CACHE_ROOT}/fineweb_cache_{target}"
     os.makedirs(cache_dir, exist_ok=True)
     token_lists = load_fineweb_fixed_length(
         n, tokenizer, seq_len=seq_len, seed=seed, cache_dir=cache_dir)
@@ -205,7 +210,7 @@ def fineweb_acts_n(model, tokenizer, device, target: str, layer: int,
     if os.path.exists(cache_pkl):
         with open(cache_pkl, "rb") as f:
             return pickle.load(f)
-    cache_dir = f"/workspace/fineweb_cache_{target}"
+    cache_dir = f"{CACHE_ROOT}/fineweb_cache_{target}"
     os.makedirs(cache_dir, exist_ok=True)
     token_lists = load_fineweb_fixed_length(
         n, tokenizer, seq_len=seq_len, seed=seed, cache_dir=cache_dir)
@@ -244,7 +249,7 @@ def wiki_acts(model, tokenizer, device, target: str, layer: int,
     through to the wikimedia/wikipedia 20231101 config name."""
     from datasets import load_dataset
     source = f"wiki_{language}"
-    cache_dir = f"/workspace/{source}_cache_{target}"
+    cache_dir = f"{CACHE_ROOT}/{source}_cache_{target}"
     cache_file = os.path.join(
         cache_dir, f"{source}_n{n}_seq{seq_len}_seed{seed}.pt")
 
@@ -265,7 +270,7 @@ def code_acts(model, tokenizer, device, target: str, layer: int,
     """Python code anchors from bigcode/the-stack-smol (default subset)."""
     from datasets import load_dataset
     source = "code"
-    cache_dir = f"/workspace/{source}_cache_{target}"
+    cache_dir = f"{CACHE_ROOT}/{source}_cache_{target}"
     cache_file = os.path.join(
         cache_dir, f"{source}_n{n}_seq{seq_len}_seed{seed}.pt")
 

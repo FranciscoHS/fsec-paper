@@ -1,9 +1,9 @@
-# Feature-Selectivity Evidence: code & data
+# Feature-specific error correction (FSEC): code & data
 
-Anonymised companion repository for our ICML 2026 submission. This repo
-contains the code and cached intermediate data needed to reproduce
-every figure in the paper, plus the upstream scripts that generate
-those caches from open-weight LLMs.
+Companion repository for our ICML 2026 paper on feature-specific error
+correction in LLMs. This repo contains the code and cached intermediate
+data needed to reproduce every figure in the paper, plus the upstream
+scripts that generate those caches from open-weight LLMs.
 
 The headline analysis fits a superellipse exponent `p` to the 2D
 iso-response contour of two contrastive feature directions, and finds
@@ -27,13 +27,14 @@ LLM figures (one per `\includegraphics` in `paper.tex`):
 
 | Figure | Output |
 | ------ | ------ |
-| Fig 1a (combo sweep)              | `combo_sweep_gemma_L2_Gender_Refusal_to50deg__to50deg_thr150.pdf` |
-| Fig 1b (fitted boundary)          | `fig3_boundary_Gender_Refusal_gemma_L2.pdf` |
-| Fig 2  (composition table)        | `composition_table_gender_tense.pdf` |
-| Fig 3  (direction-family beeswarm)| `robustness_beeswarm_gemma_L2_..._dirfamilies_morebaselines.pdf` |
-| Fig 4  (robustness beeswarm)      | `robustness_beeswarm_gemma_L2_..._exact.pdf` |
-| Appx   (direction overlap heatmap)| `appendix_directions_overlap.pdf` |
-| Appx   (fit residuals)            | `residuals_beeswarm_gemma_L2_ov0p1_thrfixed_exact.pdf` |
+| Fig 1 (combo sweep)               | `combo_sweep_gemma_L2_Wealth_Gender_to50deg_thrpair.pdf` |
+| Fig 2 (fitted boundary)           | `fig3_boundary_Wealth_Gender_gemma_L2_exact.pdf` |
+| Fig 3 (composition table)         | `composition_table_wealth_gender.pdf` |
+| Fig 4 (direction-family beeswarm) | `robustness_beeswarm_gemma_L2_..._dirfamilies_morebaselines.pdf` |
+| Fig 5 (misalignment sweep)        | `misalignment_llm_gemma_L2_thrpair_exact.pdf` |
+| Fig 6 (robustness beeswarm)       | `robustness_beeswarm_gemma_L2_..._thrpair_exact.pdf` |
+| Appx  (direction overlap heatmap) | `appendix_directions_overlap.pdf` |
+| Appx  (fit residuals)             | `residuals_beeswarm_gemma_L2_ov0p1_thrpair_exact.pdf` |
 
 Toy-model figures:
 
@@ -188,7 +189,7 @@ regenerate every paper figure (LLM + toy).
 
 ## Citation
 
-(Anonymous submission; citation will be filled in upon acceptance.)
+Citation details will be added on publication.
 
 ## License
 

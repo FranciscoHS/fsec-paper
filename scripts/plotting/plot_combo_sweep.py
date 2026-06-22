@@ -10,11 +10,21 @@ single-direction curves are directly comparable:
   - diag l2[:, k, k] with
     x = sqrt(2) * angles[k] -> sweep along (d1_perp + d2_perp)/sqrt(2)
 
-Then reads up to ``--n_random`` of the random-direction sweep pkls
+Then reads random-direction sweep pkls
 (``sweep2d_<target>_L<layer>_*_fineweb_60deg_dirrandom.pkl``); each
 contributes its first axis (``l2[:, :, 0]``, response along one random
-unit direction). Per-direction curve = median over anchors; the random
-band shows median + IQR across the ``n_random`` per-direction curves.
+unit direction). Because d1 of each pair is used as-is while d2 is
+Gram-Schmidted against it, only the d1 marginal is an unmodified random
+direction, and files sharing a d1 label have bit-identical d1 marginals
+-- so one file is kept per DISTINCT d1 label, up to ``--n_random``
+distinct directions. Per-direction curve = median over anchors; the
+random band shows median + IQR across the per-direction curves.
+
+Also prints the per-anchor paired feature-vs-random statistics quoted in
+the Fig. 1 caption: all curves share the same 30 anchors (same source +
+seed), so for each angle the paired difference (feature minus the
+per-anchor median over the random directions) is computed per anchor,
+with a 95% CI from an anchor bootstrap of the mean difference.
 
 Plots median + IQR for each, a horizontal threshold line T, and dashed
 verticals at each curve's plateau-breaking angle (linear interp of the
@@ -53,6 +63,32 @@ def crossing(angles, curve, threshold):
             t = (threshold - y0) / (y1 - y0)
             return x0 + t * (x1 - x0)
     return float("nan")
+
+
+def paired_vs_random(feat, rand_ref, xs, max_angle, n_boot=10_000, seed=0):
+    """Per-anchor paired difference (feature - random reference) stats.
+
+    feat, rand_ref: (n_anchors, n_pts) on the same x grid `xs` (deg) and
+    the same anchor set/order. Restricted to 0 < xs <= max_angle (the
+    difference is identically 0 at alpha = 0). Returns the minimum over
+    angles of: the fraction of anchors with a positive difference, and
+    the lower edge of the 95% anchor-bootstrap CI of the mean difference.
+    """
+    sel = (xs > 0) & (xs <= max_angle)
+    diffs = feat[:, sel] - rand_ref[:, sel]           # (n_anchors, n_sel)
+    n_a = diffs.shape[0]
+    frac_pos = (diffs > 0).mean(axis=0)
+    rng = np.random.RandomState(seed)
+    idx = rng.randint(0, n_a, size=(n_boot, n_a))
+    boot_means = diffs[idx].mean(axis=1)              # (n_boot, n_sel)
+    lo = np.percentile(boot_means, 2.5, axis=0)
+    return {
+        "min_frac_pos": float(frac_pos.min()),
+        "min_ci_lo": float(lo.min()),
+        "all_ci_excl_zero": bool((lo > 0).all()),
+        "n_angles": int(sel.sum()),
+        "n_anchors": int(n_a),
+    }
 
 
 def main():
@@ -144,18 +180,41 @@ def main():
     # direction at alpha_2=0). Per-direction curve = median over anchors;
     # IQR across the n_random per-direction curves.
     rand_curve = None
+    rand_anchor_ref = None
     if args.n_random > 0:
         rand_pat = (f"{DATA_DIR}/sweep2d_{args.target}_L{args.layer}_"
                     f"*__*_fineweb_60deg_dirrandom.pkl")
-        rand_files = sorted(glob.glob(rand_pat))[: args.n_random]
-        rand_per_dir = []
+        # Only the d1 marginal `l2[:, :, 0]` is an unmodified random
+        # direction (d2 is Gram-Schmidted against d1), and files sharing
+        # a d1 label have identical d1 marginals -- keep one file per
+        # distinct d1 label.
+        prefix = f"sweep2d_{args.target}_L{args.layer}_"
+        rand_files = []
+        seen_d1 = set()
+        for fp in sorted(glob.glob(rand_pat)):
+            d1_label = os.path.basename(fp)[len(prefix):].split("__")[0]
+            if d1_label in seen_d1:
+                continue
+            seen_d1.add(d1_label)
+            rand_files.append(fp)
+            if len(rand_files) >= args.n_random:
+                break
+        rand_per_dir = []         # per-direction anchor-median curves
+        rand_per_dir_anchor = []  # per-direction (n_anchors, n_angles)
         for fp in rand_files:
             with open(fp, "rb") as f:
                 dr = pickle.load(f)
+            if (dr.get("seed_anchors") != d.get("seed_anchors")
+                    or dr["l2"].shape[0] != grid.shape[0]):
+                print(f"  skip {os.path.basename(fp)}: anchor mismatch")
+                continue
             rg = np.asarray(dr["l2"], dtype=float)            # (n_anchors, n, n)
             rand_per_dir.append(np.median(rg[:, :, 0], axis=0))
+            rand_per_dir_anchor.append(rg[:, :, 0])
         if rand_per_dir:
             rand_stack = np.stack(rand_per_dir, axis=0)        # (n_dirs, n_angles)
+            # per-anchor median over directions, for the paired stats
+            rand_anchor_ref = np.median(np.stack(rand_per_dir_anchor), axis=0)
             r_med = np.median(rand_stack, axis=0)
             r_lo  = np.percentile(rand_stack, 25, axis=0)
             r_hi  = np.percentile(rand_stack, 75, axis=0)
@@ -174,6 +233,31 @@ def main():
     print(f"plateau-breaking angles:  {args.d1}={a_g:.2f}  "
           f"{args.d2}={a_t:.2f}  combo={a_c:.2f}  "
           f"random={a_r:.2f}  (deg)")
+
+    # Paired per-anchor feature-vs-random statistics (Fig. 1 caption).
+    if rand_anchor_ref is not None:
+        # The combo curve lives at geodesic radius sqrt(2)*alpha;
+        # evaluate the random reference at matched radius (per anchor,
+        # linear interp), within the measured angle range.
+        c_ok = diag_x <= angles.max()
+        combo_ref = np.stack([np.interp(diag_x[c_ok], angles, ra)
+                               for ra in rand_anchor_ref])
+        cases = [
+            (args.d1, gender_axis_grid, rand_anchor_ref, angles),
+            (args.d2, tense_axis_grid, rand_anchor_ref, angles),
+            (f"{args.d1}+{args.d2}", diag[:, c_ok], combo_ref, diag_x[c_ok]),
+        ]
+        n_dirs = len(rand_per_dir)
+        print(f"\npaired per-anchor stats vs random reference "
+              f"(median over {n_dirs} dirs), angles in "
+              f"(0, {args.max_angle:g}] deg, 10000 anchor-bootstrap "
+              f"resamples:")
+        for label, feat, ref, xs in cases:
+            s = paired_vs_random(feat, ref, xs, args.max_angle)
+            print(f"  {label:24s} min frac(anchors with diff>0) = "
+                  f"{s['min_frac_pos']:.2f}   min 95% CI lower edge = "
+                  f"{s['min_ci_lo']:.2f}   CI excludes 0 at all "
+                  f"{s['n_angles']} angles: {s['all_ci_excl_zero']}")
 
     # Plot.
     plt.rcParams["mathtext.fontset"] = "cm"

@@ -53,7 +53,7 @@ def col_threshold_residual(target: str, layer: int,
     p_median field that the main col_threshold expects.
     """
     fp = os.path.join(FITS_DIR,
-        f"fits_{target}_L{layer}_thrfixed_exact.pkl")
+        f"fits_{target}_L{layer}_thrpair_exact.pkl")
     if not os.path.exists(fp): return {}
     with open(fp, "rb") as f: full = pickle.load(f)
     out: dict[str, dict] = {}
@@ -89,10 +89,10 @@ def main():
     args = ap.parse_args()
     excl = {n.strip() for n in args.exclude_dirs.split(",") if n.strip()}
 
-    # All fits we read are the exact-geodesic, fixed-T variants — same
-    # as the canonical robustness beeswarm. The col_* loaders pick up
-    # USE_THRFIXED / USE_EXACT from the module.
-    P.USE_THRFIXED = True
+    # All fits we read are the exact-geodesic, per-pair-threshold variants —
+    # same as the canonical robustness beeswarm. The col_* loaders pick up
+    # USE_THRPAIR / USE_EXACT from the module.
+    P.USE_THRPAIR = True
     P.USE_EXACT = True
     # Swap the per-pair aggregator: residual instead of p_median.
     P.median_p_for_pair = median_residual_for_pair
@@ -117,7 +117,7 @@ def main():
     fam_subs = {}
     for label, fits_suffix, dir_suffix, do_filter in FAMILIES:
         fp = os.path.join(FITS_DIR,
-            f"fits_{target}_L{layer}{fits_suffix}_thrfixed_exact.pkl")
+            f"fits_{target}_L{layer}{fits_suffix}_thrpair_exact.pkl")
         d = P._load_fit_pair_dict(fp)
         if not d:
             print(f"  Direction family / {label}: no fits at {fp}")
@@ -137,7 +137,7 @@ def main():
 
     out_png = os.path.join(
         OUT_DIR,
-        f"residuals_beeswarm_{target}_L{layer}_ov0p1_thrfixed_exact.png")
+        f"residuals_beeswarm_{target}_L{layer}_ov0p1_thrpair_exact.png")
     out_pdf = out_png.replace(".png", ".pdf")
     ref_y = (args.ref_pct / 100.0) if args.ref_pct is not None else None
     ref_label = (rf"${args.ref_pct:g}\%$ reference"

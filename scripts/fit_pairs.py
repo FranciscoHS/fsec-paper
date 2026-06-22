@@ -54,6 +54,20 @@ def main():
                          "max_alpha in {30,45,60} = 9 cells). Default "
                          "output suffix becomes '_thrfixed' (overridable "
                          "via --out_suffix).")
+    ap.add_argument("--per_pair_threshold", action="store_true",
+                    help="per-pair fixed-L^2 protocol: for each sweep, "
+                         "T_pair = f * min(g[:,0].max(), g[0,:].max()) where "
+                         "g is the median-over-anchors grid (f=0.5). Mutually "
+                         "exclusive with --thresh_l2. The threshold cancels in "
+                         "the superellipse derivation, so this measures the "
+                         "same exponent while guaranteeing both axes cross. "
+                         "Default output suffix becomes '_thrpair' "
+                         "('_thrpair_exact' with --exact).")
+    ap.add_argument("--per_pair_f", type=float, default=0.50,
+                    help="f in T_pair = f * min(axis maxima). Default 0.50 "
+                         "(the headline 1.0xT cell). The 0.5/1/2 x T_pair "
+                         "threshold-robustness ablation is layered on top by "
+                         "robust_p_fit_fixed_l2's threshold_factors.")
     ap.add_argument("--exact", action="store_true",
                     help="use exact-geodesic normalization "
                          "(sin alpha cos phi / sin alpha_1, sin alpha sin "
@@ -61,6 +75,9 @@ def main():
                          "approximation alpha cos phi / alpha_1. Adds "
                          "'_exact' to the default output suffix.")
     args = ap.parse_args()
+
+    if args.per_pair_threshold and args.thresh_l2 is not None:
+        ap.error("--per_pair_threshold and --thresh_l2 are mutually exclusive")
 
     # anchor_source != fineweb tacks an extra _src<label> suffix on both
     # the input sweep glob and the output fits filename.
@@ -85,7 +102,19 @@ def main():
             continue
         grid = d[args.metric]   # (n_anchors, n, n)
         a, b = d["direction_labels"]
-        if args.thresh_l2 is not None:
+        if args.per_pair_threshold:
+            # Per-pair threshold from this sweep's own median grid:
+            # T_pair = f * min(axis-1 max, axis-2 max), so both axes cross.
+            # robust_p_fit_fixed_l2 then layers the 0.5/1/2 factors on top,
+            # making 1.0xT == T_pair the headline cell.
+            mg = np.median(grid, axis=0)
+            base = min(float(mg[:, 0].max()), float(mg[0, :].max()))
+            t_pair = args.per_pair_f * base
+            fit = robust_p_fit_fixed_l2(ang, grid, t_pair,
+                                         max_alphas=(60.0,),
+                                         n_bootstrap=args.n_bootstrap,
+                                         exact_geodesic=args.exact)
+        elif args.thresh_l2 is not None:
             # Single 60-degree fit window (no angle sweep): the reported p
             # is one fit on the full iso-T contour. Threshold factors are
             # kept so the threshold-robustness column (contrastive only)
@@ -140,6 +169,8 @@ def main():
         if args.metric != "l2":
             suffix += f"_metric_{args.metric}"
         suffix += src_suffix
+        if args.per_pair_threshold:
+            suffix += "_thrpair"
         if args.exact:
             suffix += "_exact"
     out_pkl = os.path.join(OUT_DIR,

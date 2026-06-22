@@ -1,12 +1,14 @@
-"""Composition figure: Gender x Tense on "Once upon a time, the prince".
+"""Composition figure: Wealth x Gender on a gender-neutral, wealth-silent prompt.
 
-Cloned from scripts/plotting/plot_composition_formal_pt.py — same renderer
-(rounded box, monospace, label inline with first body line) and the same
-orange/blue/purple palette. Only the feature labels and content change:
+Cloned from plot_composition_table.py (same renderer). Steering directions are
+applied as norm-matched rotations at Gemma-2-9B layer 2 (see scripts/steer_test.py).
+Completions are representative greedy/sampled generations selected from
+logs/steer_wg_combos.txt (singles, 20 deg) and logs/steer_wg_combo_angle.txt
+(composite, 30 deg). Labels name the *effect*: +Wealth steers toward poverty,
++Gender toward feminine.
 
-  C_GEN  = orange  (female-gendered)   <- slot 1, was Formal
-  C_FUT  = blue    (future tense)      <- slot 2, was PT
-  C_BOTH = purple  (both)
+  C_WEALTH = orange  (poverty;  Wealth axis)   <- slot 1
+  C_GENDER = blue    (feminine; Gender axis)   <- slot 2
 """
 from __future__ import annotations
 import os
@@ -15,106 +17,88 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from matplotlib.patches import FancyBboxPatch
 
-OUT_PNG = "results/figures/composition_table_gender_tense.png"
-OUT_PDF = "results/figures/composition_table_gender_tense.pdf"
+OUT_PNG = "results/figures/composition_table_wealth_gender.png"
+OUT_PDF = "results/figures/composition_table_wealth_gender.pdf"
 
-# Colours (slot-matched to plot_composition_formal_pt.py)
 C_TEXT = "#2a2a2a"
 C_LABEL_NEUTRAL = "#222222"
-C_GEN  = "#D9822B"   # orange — female-gendered (slot 1, was Formal)
-C_FUT  = "#1F77B4"   # blue   — future tense    (slot 2, was Portuguese)
-C_BOTH = "#7B3294"   # purple — both
+C_WEALTH = "#D9822B"   # orange — poverty  (Wealth axis, slot 1)
+C_GENDER = "#1F77B4"   # blue   — feminine (Gender axis, slot 2)
 
-PROMPT = "Once upon a time, the prince"
+PROMPT = "The other day I met someone who"
 
-# Each row: (label_segments, body_segments).
-# label_segments is a list of (text, colour) tuples — same structure as
-# body, so the angle can be coloured to match its direction.
 ROWS = [
     (
         [("Unsteered", C_LABEL_NEUTRAL)],
         [
-            ("went out into the world to learn the craft of his father, the "
-             "king. The prince traveled to the edge of the world, and from "
-             "there he traveled on to a land where the sun never set. Here "
-             "he found a wise old man. “What is the highest art of "
-             "kingship?” asked the prince. “To love and s…",
-             C_TEXT),
+            ("was interested in the idea of moving to Austin, TX. He wanted a "
+             "bit more detail about what makes it such an attractive place for "
+             "professionals and students from out-of-town. What are some "
+             "reasons we love living here? Here's my…", C_TEXT),
         ],
     ),
     (
-        [("+ ", C_LABEL_NEUTRAL), ("Female 20°", C_GEN)],
+        [("+ ", C_LABEL_NEUTRAL), ("Poverty 30°", C_WEALTH)],
         [
-            ("was walking through the woods, and ", C_TEXT),
-            ("she", C_GEN),
-            (" came across a fairy who asked ", C_TEXT),
-            ("her", C_GEN),
-            (" what ", C_TEXT),
-            ("she", C_GEN),
-            (" wanted. And the ", C_TEXT),
-            ("princess", C_GEN),
-            (" replied, “I want to be loved.” This fairy is very "
-             "old and has lived in these woods for hundreds of years. ",
-             C_TEXT),
-            ("She", C_GEN),
-            (" is a very powerful fairy, and when ", C_TEXT),
-            ("she", C_GEN),
-            (" heard the", C_TEXT),
+            ("was ", C_TEXT),
+            ("so poor", C_WEALTH),
+            (" that he ", C_TEXT),
+            ("had no money to buy food", C_WEALTH),
+            (". He asked me for ", C_TEXT),
+            ("some bread and water", C_WEALTH),
+            (", but all the while my heart bled with him as it could not give "
+             "anything more than a little bit of pity…", C_TEXT),
         ],
     ),
     (
-        [("+ ", C_LABEL_NEUTRAL), ("Future 30°", C_FUT)],
+        [("+ ", C_LABEL_NEUTRAL), ("Female 20°", C_GENDER)],
         [
-            ("was sent to a land where the king is having a problem. The "
-             "prince ", C_TEXT),
-            ("will try", C_FUT),
-            (" to solve the problem, but he ", C_TEXT),
-            ("will fail", C_FUT),
-            (". So he ", C_TEXT),
-            ("will go", C_FUT),
-            (" to a tower to get help from a fairy, but he ", C_TEXT),
-            ("will fail", C_FUT),
-            (". Then he ", C_TEXT),
-            ("will go", C_FUT),
-            (" to a tower to get help from a wizard, but he ", C_TEXT),
-            ("will fail", C_FUT),
-            (". Finally, he ", C_TEXT),
-            ("will go", C_FUT),
-            ("…", C_TEXT),
+            ("was wearing a pair of earrings that caught my eye. ", C_TEXT),
+            ("The girl", C_GENDER),
+            (" explained they were ", C_TEXT),
+            ("her", C_GENDER),
+            (" engagement ring and wedding bands all in one, so ", C_TEXT),
+            ("she", C_GENDER),
+            (" didn't have to take off the earring set when taking them on…",
+             C_TEXT),
         ],
     ),
     (
         [("+ ", C_LABEL_NEUTRAL),
-         ("Female 20°", C_GEN),
+         ("Poverty", C_WEALTH),
          (" + ", C_LABEL_NEUTRAL),
-         ("Future 30°", C_FUT)],
+         ("Female 30°", C_GENDER)],
         [
-            ("of an Indian tribe was forced to marry the prince of an "
-             "African tribe. After they married each other, the ", C_TEXT),
-            ("queen", C_GEN),
-            (" of the Indian tribe ", C_TEXT),
-            ("will give", C_FUT),
-            (" birth to two twins. One twin has long hair and one has short "
-             "hair. The ", C_TEXT),
-            ("mother", C_GEN),
-            (" of the twin ", C_TEXT),
-            ("will take", C_FUT),
-            (" ", C_TEXT),
-            ("her", C_GEN),
-            (" short hair and send ", C_TEXT),
-            ("her", C_GEN),
-            (" to another", C_TEXT),
+            ("was ", C_TEXT),
+            ("homeless", C_WEALTH),
+            (". ", C_TEXT),
+            ("She", C_GENDER),
+            (" told me ", C_TEXT),
+            ("she", C_GENDER),
+            (" had ", C_TEXT),
+            ("nowhere to go", C_WEALTH),
+            (" and ", C_TEXT),
+            ("no money", C_WEALTH),
+            (" in ", C_TEXT),
+            ("her", C_GENDER),
+            (" pocket, so ", C_TEXT),
+            ("she", C_GENDER),
+            (" slept out ", C_TEXT),
+            ("on the street", C_WEALTH),
+            (" every night because of ", C_TEXT),
+            ("poverty", C_WEALTH),
+            ("…", C_TEXT),
         ],
     ),
 ]
 
-# ---- Layout (matches plot_composition_formal_pt.py) ----
+# ---- Layout (matches plot_composition_table.py) ----
 FIG_W_IN = 11.5
 FONT_PROMPT_LABEL = 11
 FONT_LABEL = 10.5
 FONT_BODY = 10
 FONT_FAMILY = "monospace"
-WRAP_CHARS = 88
+WRAP_CHARS = 80
 LABEL_COL_W = 3.5
 LEFT_MARGIN = 0.45
 RIGHT_MARGIN = 0.45
@@ -216,7 +200,6 @@ def main():
     y += PROMPT_GAP
 
     for (label_segs, _body), lines in zip(ROWS, rows_lines):
-        # multi-coloured label, all on one line, ending with ':'
         x = label_x
         for tok, col in label_segs:
             t = ax.text(x, y, tok, fontsize=FONT_LABEL,
