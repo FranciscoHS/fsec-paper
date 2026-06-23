@@ -1,6 +1,6 @@
 # Feature-specific error correction (FSEC): code & data
 
-Companion repository for our ICML 2026 paper on feature-specific error
+Companion repository for our paper on feature-specific error
 correction in LLMs. This repo contains the code and cached intermediate
 data needed to reproduce every figure in the paper, plus the upstream
 scripts that generate those caches from open-weight LLMs.
@@ -186,10 +186,6 @@ regenerate every paper figure (LLM + toy).
 | mistral | `mistralai/Mistral-7B-v0.3`  |
 | aya     | `CohereForAI/aya-expanse-8b` |
 | yi      | `01-ai/Yi-1.5-9B`            |
-
-## Citation
-
-Citation details will be added on publication.
 
 ## License
 
