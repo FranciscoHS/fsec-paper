@@ -8,6 +8,8 @@ __pycache__/
 results/figures/
 toy_model/runs/**/*.png
 toy_model/runs/**/*.pdf
+jlens/qwen36_p_beeswarm.png
+jlens/qwen36_p_beeswarm.pdf
 
 # Local caches / scratch
 cache/

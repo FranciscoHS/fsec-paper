@@ -78,7 +78,13 @@ python scripts/plotting/plot_residuals_beeswarm.py
       --out runs/misalignment_sweep_H1024/lp_vs_angle_no_feature_orth_clean.png
 )
 
+# ----------------------------------------------------------------------
+# J-lens directions on Qwen3.6-27B (self-contained; reads jlens/data/).
+# ----------------------------------------------------------------------
+python jlens/plot_beeswarm.py
+
 echo
 echo "All figures regenerated."
 echo "  LLM figures:        results/figures/"
 echo "  Toy-model figures:  toy_model/runs/misalignment_sweep_H1024/"
+echo "  J-lens figure:      jlens/qwen36_p_beeswarm.png"
