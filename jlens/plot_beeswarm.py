@@ -67,7 +67,7 @@ def main():
         ("J-Lens ZH",
          headline_ps(os.path.join(DATA, "fits_jlens_zh100_thrpair_exact.pkl"),
                      20.0), "#377eb8"),
-        ("J-Lens EN\n(concrete)",
+        ("J-Lens EN",
          headline_ps(os.path.join(DATA,
                                   "fits_jlens_en_concrete_thrpair_exact.pkl"),
                      20.0), "#984ea3"),
