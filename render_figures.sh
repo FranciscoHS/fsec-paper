@@ -7,7 +7,7 @@ cd "$(dirname "$0")"
 # LLM figures (read PKLs from results/, write PDF + PNG to results/figures/).
 # ----------------------------------------------------------------------
 
-# Fig 1 — combo sweep (Wealth x Gender, 0..50 deg). Threshold is the
+# Fig 1 — combo sweep (Wealth x Gender, 0..60 deg). Threshold is the
 # per-pair scale T_pair = 0.5 * min(axis maxima) on this pair's own median
 # grid (= 139 for Wealth x Gender at gemma L2). Omitting --threshold lets
 # the script compute it, so the line is the same per-pair contour level the
@@ -15,7 +15,7 @@ cd "$(dirname "$0")"
 python scripts/plotting/plot_combo_sweep.py \
     --target gemma --layer 2 \
     --d1 Wealth --d2 Gender \
-    --max_angle 50 --out_tag thrpair
+    --max_angle 60 --out_tag thrpair
 
 # Fig 2 — fitted boundary (same per-pair threshold T_pair=139, auto-computed)
 python scripts/plotting/plot_fig3_boundary.py \

@@ -27,7 +27,7 @@ LLM figures (one per `\includegraphics` in `paper.tex`):
 
 | Figure | Output |
 | ------ | ------ |
-| Fig 1 (combo sweep)               | `combo_sweep_gemma_L2_Wealth_Gender_to50deg_thrpair.pdf` |
+| Fig 1 (combo sweep)               | `combo_sweep_gemma_L2_Wealth_Gender_to60deg_thrpair.pdf` |
 | Fig 2 (fitted boundary)           | `fig3_boundary_Wealth_Gender_gemma_L2_exact.pdf` |
 | Fig 3 (composition table)         | `composition_table_wealth_gender.pdf` |
 | Fig 4 (direction-family beeswarm) | `robustness_beeswarm_gemma_L2_..._dirfamilies_morebaselines.pdf` |
