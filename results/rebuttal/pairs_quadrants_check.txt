@@ -1,0 +1,9 @@
+# a,b,quadrant  ((+,+) pairs already cached, for reproducibility)
+Age,Arabic,++
+Tense,Arabic,++
+Era,Cpp,++
+Era,Refusal,++
+Gender,Spanish,++
+Health,Person,++
+Status,Java,++
+Person,Python,++

@@ -1,0 +1,31 @@
+
+=== E3: fitted p vs threshold fraction f (median grid, per-pair T = f * min axis max) ===
+contrastive  f=0.05  n= 318  median 1.92 [1.76, 2.17]  mean 2.12 [1.88, 2.38]  frac>2 0.44  contour pts 5
+contrastive  f=0.1   n= 318  median 2.15 [1.98, 2.32]  mean 2.26 [2.08, 2.46]  frac>2 0.64  contour pts 12
+contrastive  f=0.15  n= 318  median 2.15 [2.06, 2.33]  mean 2.29 [2.13, 2.49]  frac>2 0.70  contour pts 18
+contrastive  f=0.2   n= 318  median 2.28 [2.17, 2.49]  mean 2.40 [2.25, 2.59]  frac>2 0.82  contour pts 23
+contrastive  f=0.3   n= 318  median 2.32 [2.20, 2.47]  mean 2.45 [2.30, 2.67]  frac>2 0.86  contour pts 30
+contrastive  f=0.4   n= 318  median 2.34 [2.23, 2.49]  mean 2.44 [2.30, 2.63]  frac>2 0.88  contour pts 36
+contrastive  f=0.5   n= 318  median 2.30 [2.21, 2.41]  mean 2.42 [2.28, 2.62]  frac>2 0.88  contour pts 39
+pca          f=0.05  n= 528  median 2.00 [1.92, 2.08]  mean 2.07 [1.98, 2.18]  frac>2 0.50  contour pts 5
+pca          f=0.1   n= 528  median 2.00 [1.90, 2.10]  mean 2.09 [1.98, 2.21]  frac>2 0.49  contour pts 12
+pca          f=0.15  n= 528  median 2.01 [1.90, 2.14]  mean 2.11 [2.00, 2.24]  frac>2 0.52  contour pts 17
+pca          f=0.2   n= 528  median 2.04 [1.92, 2.14]  mean 2.10 [1.99, 2.22]  frac>2 0.54  contour pts 21
+pca          f=0.3   n= 528  median 1.95 [1.87, 2.04]  mean 2.02 [1.92, 2.11]  frac>2 0.44  contour pts 29
+pca          f=0.4   n= 528  median 1.95 [1.86, 2.04]  mean 2.02 [1.92, 2.11]  frac>2 0.43  contour pts 35
+pca          f=0.5   n= 528  median 1.97 [1.87, 2.05]  mean 2.03 [1.94, 2.12]  frac>2 0.47  contour pts 38
+random       f=0.05  n= 246  median 1.87 [1.71, 2.11]  mean 2.02 [1.84, 2.24]  frac>2 0.41  contour pts 3
+random       f=0.1   n= 528  median 2.04 [1.93, 2.12]  mean 2.12 [2.03, 2.22]  frac>2 0.52  contour pts 11
+random       f=0.15  n= 528  median 2.09 [2.00, 2.18]  mean 2.13 [2.06, 2.21]  frac>2 0.59  contour pts 17
+random       f=0.2   n= 528  median 2.06 [1.98, 2.12]  mean 2.08 [2.02, 2.15]  frac>2 0.57  contour pts 22
+random       f=0.3   n= 528  median 2.05 [2.01, 2.11]  mean 2.07 [2.02, 2.13]  frac>2 0.61  contour pts 31
+random       f=0.4   n= 528  median 2.05 [2.01, 2.09]  mean 2.06 [2.02, 2.10]  frac>2 0.62  contour pts 37
+random       f=0.5   n= 528  median 2.02 [1.99, 2.07]  mean 2.03 [2.00, 2.07]  frac>2 0.57  contour pts 41
+random_diff  f=0.05  n= 701  median 1.98 [1.86, 2.16]  mean 2.12 [2.00, 2.23]  frac>2 0.49  contour pts 5
+random_diff  f=0.1   n= 710  median 1.95 [1.88, 2.06]  mean 2.08 [1.99, 2.18]  frac>2 0.47  contour pts 12
+random_diff  f=0.15  n= 710  median 1.94 [1.86, 2.03]  mean 2.03 [1.95, 2.13]  frac>2 0.45  contour pts 19
+random_diff  f=0.2   n= 710  median 1.94 [1.88, 2.02]  mean 2.03 [1.96, 2.11]  frac>2 0.43  contour pts 24
+random_diff  f=0.3   n= 710  median 1.98 [1.92, 2.05]  mean 2.06 [1.99, 2.13]  frac>2 0.47  contour pts 33
+random_diff  f=0.4   n= 710  median 2.01 [1.94, 2.07]  mean 2.05 [1.99, 2.10]  frac>2 0.52  contour pts 38
+random_diff  f=0.5   n= 710  median 2.02 [1.95, 2.07]  mean 2.05 [2.00, 2.10]  frac>2 0.53  contour pts 42
+saved results/rebuttal/e3_threshold_sweep.json

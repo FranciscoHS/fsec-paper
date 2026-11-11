@@ -16,6 +16,9 @@ Default family set:
                        estimator with random instead of concept-matched
                        pairs). Reads the ``randomdiffavg_fineweb`` family.
   7. Random         — isotropic unit vectors
+  8. MLP neurons    — 33 random neurons of the first MLP after the
+                       perturbation point, as gate rows in residual
+                       coordinates (where the elementwise nonlinearity acts)
 
 Every column is overlap-filtered at ``|cos| < max_overlap`` against its
 own direction set (not just the Contrastive set as the original beeswarm
@@ -48,6 +51,10 @@ FAMILIES = [
     ("PCA",          "_dirpca_fineweb", "_pca_fineweb",   True),
     ("Random-diff",  "_dirrandomdiffavg_fineweb", "_randomdiffavg_fineweb", True),
     ("Random",       "_dirrandom",      "_random",        True),
+    # 33 random block-3 MLP neurons (gate rows in residual coordinates);
+    # scripts/rebuttal/mlp_neuron_directions.py --select random. Skipped
+    # automatically if the fits file is absent.
+    ("Neurons",      "_dirmlpneuronrand", "_mlpneuronrand", True),
 ]
 
 
